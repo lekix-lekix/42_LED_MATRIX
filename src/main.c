@@ -41,81 +41,95 @@ void draw_grid(t_img *img, int color)
     }
 }
 
-bool check_if_alive(int tab[15][20], int x, int y)
+void check_if_alive(__uint8_t tab[15][20], int x_tab, int y_tab)
 {
-    int i;
-    int j;
+    int x;
+    int y;
     int alive = 0;
     
-    i = y - 1;
-    if (i < 0)
-        i = 0;
-    while (i <= y + 1)
+    y = y_tab - 1;
+    if (y < 0)
+        y = 0;
+    if (y >= G_HEIGHT)
+        y = G_HEIGHT - 1;
+    while (y <= y_tab + 1)
     {
-        j = x - 1;
-        if (j < 0)
-            j = 0;
-        while (j <= x + 1)
+        x = x_tab - 1;
+        if (x < 0)
+            x = 0;
+        if (x >= G_HEIGHT)
+            x = G_HEIGHT - 1;
+        while (x <= x_tab + 1)
         {
-            if (tab[i][j] == true)
+            if (tab[x][y])
                 alive++;
-            j++;
+            x++;
         }
-        i++;
+        y++;
     }
     if (alive != 0)
         alive -= 1;
-    printf("alive = %d\n", alive);
+    // printf("alive = %d\n", alive);
     if (alive == 2 || alive == 3)
-        return (true);
-    return (false);
+        tab[x_tab][y_tab] = 1;
+    else
+    {
+        // printf("x = %d y = %d\n", x, y);
+        tab[x_tab][y_tab] = 0;
+    }
+}
+
+void conway(__uint8_t tab[15][20])
+{
+    for (int y = 0; y < G_HEIGHT; y++)
+    {
+        for (int x = 0; x < G_WIDTH; x++)
+            check_if_alive(tab, x, y);
+    }
 }
 
 int main ()
 {
     t_mlx window = start_mlx(W_WIDTH, W_HEIGHT);
-    t_img *img = init_img(&window);
+    t_img *img;
     
-    int conway_tab[G_HEIGHT][G_WIDTH] = {
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    __uint8_t conway_tab[G_HEIGHT][G_WIDTH] = {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    // while (1)
-    // {
-        // usleep(10000);
-        // conway(conway_tab);
-        for (int i = 0; i < G_HEIGHT; i++)
+    while (1)
+    {
+        usleep(10000);
+        img = init_img(&window);
+        conway(conway_tab);
+        for (int y = 0; y < G_HEIGHT; y++)
         {
-            for (int j = 0; j < G_WIDTH; j++)
+            for (int x = 0; x < G_WIDTH; x++)
             {
-                // printf("i = %d j = %d\n", i, j);
-                if (conway_tab[i][j] && check_if_alive(conway_tab, j, i))
-                    draw_cell(img, j, i, 0xFFFFFF);
+                if (conway_tab[x][y])
+                    draw_cell(img, x, y, 0xFFFFFF);
                 else
-                    draw_cell(img, j, i, 0x000000);
+                    draw_cell(img, x, y, 0x000000);
             }
         }
-        
-        // draw_cell(img, 10, 10, 0xFFFFFF);
         draw_grid(img, 0xFF);
         mlx_put_image_to_window(window.mlx_ptr, window.win_ptr, img->img_ptr, 0, 0);
-        // i % 2 == 0 ? draw_cell(img, 1, 1, 0xFFFFFF) : draw_cell(img, 1, 1, 0x000000);
-        // mlx_put_image_to_window(window.mlx_ptr, window.win_ptr, img->img_ptr, 0, 0);
-        // i++;
-    // }
+        mlx_destroy_image(window.mlx_ptr, img->img_ptr);
+        free(img);
+    }
     mlx_loop(window.mlx_ptr);
 }
