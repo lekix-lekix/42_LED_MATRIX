@@ -1,67 +1,38 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   mlx_utils.c                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/17 13:48:08 by kipouliq          #+#    #+#             */
-/*   Updated: 2025/03/27 18:50:44 by kipouliq         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "../include/include.h"
 
-#include "../include/led_matrix.hpp"
-
-int	start_mlx(int height, int width)
+t_mlx	start_mlx(int width, int height)
 {
-	cub->mlx_data.mlx_ptr = mlx_init();
-	if (!cub->mlx_data.mlx_ptr)
+	t_mlx window;
+    
+    window.mlx_ptr = mlx_init();
+	if (!window.mlx_ptr)
 		exit(-1);
-	cub->mlx_data.width = width;
-	cub->mlx_data.height = height;
-	cub->mlx_data.win_ptr = mlx_new_window(cub->mlx_data.mlx_ptr, width, height,
-			"cub3D");
-	if (!cub->mlx_data.win_ptr)
-		return (error_exit(MEM_ERROR, cub), -1);
-	return (0);
+	window.width = width;
+	window.height = height;
+	window.win_ptr = mlx_new_window(window.mlx_ptr, width, height, "LED_MATRIX");
+	if (!window.win_ptr)
+        exit(-1);
+    return (window);
 }
 
-void	init_mlx_img_texture(t_cub *cub, t_texture *text)
+t_img	*init_img(t_mlx *window)
 {
-	text->text_img = malloc(sizeof(t_mlx_img));
-	if (!text->text_img)
-		error_exit(MEM_ERROR, cub);
-	text->text_img->img_ptr = mlx_xpm_file_to_image(cub->mlx_data.mlx_ptr,
-			text->path, &text->width, &text->height);
-	if (!text->text_img->img_ptr)
-		error_exit(MEM_ERROR, cub);
-	text->text_img->img_addr = mlx_get_data_addr(text->text_img->img_ptr,
-			&text->text_img->bpp, &text->text_img->line_len,
-			&text->text_img->endian);
-	if (!text->text_img->img_addr)
-		error_exit(MEM_ERROR, cub);
-}
+	t_img	*img;
 
-t_mlx_img	*init_img(t_window_mlx *data, t_cub *cub)
-{
-	t_mlx_img	*img;
-
-	(void)data;
-	img = malloc(sizeof(t_mlx_img));
+	img = malloc(sizeof(t_img));
 	if (!img)
-		return (error_exit(NULL, cub), NULL);
-	img->img_ptr = mlx_new_image(data->mlx_ptr, data->width, data->height);
+        exit(-1);
+    img->img_ptr = mlx_new_image(window->mlx_ptr, window->width, window->height);
 	if (!img->img_ptr)
-		return (free(img), error_exit(MEM_ERROR, cub), NULL);
-	img->img_addr = mlx_get_data_addr(img->img_ptr, &img->bpp, &img->line_len,
+        exit(-1);
+    img->img_addr = mlx_get_data_addr(img->img_ptr, &img->bpp, &img->line_len,
 			&img->endian);
 	if (!img->img_addr)
-		return (mlx_destroy_image(cub->mlx_data.mlx_ptr, img->img_ptr),
-			free(img), error_exit(MEM_ERROR, cub), NULL);
-	return (img);
+        exit(-1);
+    return (img);
 }
 
-int	*get_pixel_from_img(t_mlx_img *img, int x, int y)
+int	*get_pixel_from_img(t_img *img, int x, int y)
 {
 	char	*pixel;
 
@@ -69,7 +40,7 @@ int	*get_pixel_from_img(t_mlx_img *img, int x, int y)
 	return ((int *)pixel);
 }
 
-void	img_pix_put(t_mlx_img *img, int x, int y, int color)
+void	img_pix_put(t_img *img, int x, int y, int color)
 {
 	char	*pixel;
 

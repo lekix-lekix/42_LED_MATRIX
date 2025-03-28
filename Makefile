@@ -3,47 +3,50 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+         #
+#    By: lekix <lekix@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/13 16:29:27 by kipouliq          #+#    #+#              #
-#    Updated: 2025/03/27 19:04:41 by kipouliq         ###   ########.fr        #
+#    Updated: 2025/03/27 22:43:59 by lekix            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = LED_MATRIX
 
-CXX = c++
+CXX = gcc
 
-FLAGS = -std=c++98 -Wall -Wextra -Werror -g
+CFLAGS = -Wall -Wextra -Werror -g
 
-SRCS = ./src/main.cpp \
-		./src/Mlx.cpp
+SRCS = ./src/mlx_utils.c \
+		./src/main.c
 
 PATH_MLX = ./minilibx-linux
 
 MLX = ./minilibx-linux/libmlx.a
 
-MLX_FLAGS = -lmlx -lXext -lX11 -lm 
+MLX_FLAGS = -I$(PATH_MLX) -lmlx -lXext -lX11 -lm 
 
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
+$(MLX):
 	make -C $(PATH_MLX)
-	$(CXX) $(FLAGS) $(OBJS) -L ./minilibx-linux $(MLX_FLAGS) -o $@
+
+$(NAME): $(MLX) $(OBJS)
+	$(CXX) $(CFLAGS) $(OBJS) -L ./minilibx-linux $(MLX_FLAGS) -o $@
 
 $(OBJS_PATH):
 	mkdir -p $(OBJS_PATH)
 
-$(OBJS_PATH)%.o: $(SCRS)%.cpp
-	$(CXX) $(FLAGS) -c $< -o $@
+$(OBJS_PATH)%.o: $(SRCS)%.c
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf ./src/*.o
 
 fclean:	clean
 	rm -f $(NAME)
+	make clean -C $(PATH_MLX)
 
 re: fclean
 	make all
