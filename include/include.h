@@ -11,7 +11,13 @@
 # define GRID_X 40
 # define GRID_Y 40
 
+# define ALIVE_COLOR 0x00FF00
+# define DEAD_COLOR 0x000000
+# define GRID_COLOR 0x0000FF
+
 #include "../minilibx-linux/mlx.h"
+#include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 
 typedef struct s_mlx
@@ -31,6 +37,11 @@ typedef struct s_img
 	int				endian;
 }					t_img;
 
+typedef struct cell
+{
+    int x;
+    int y;
+}                   t_cell;
 
 t_mlx	start_mlx(int width, int height);
 t_img	*init_img(t_mlx *window);
