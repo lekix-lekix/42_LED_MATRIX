@@ -58,7 +58,7 @@ void check_if_alive(__uint8_t tab[15][20], __uint8_t next_tab[15][20], int x_tab
     int alive = 0;
 
     alive = check_neighbours(tab, x_tab, y_tab);
-    if (tab[y_tab][x_tab] && alive < 2)
+    if (tab[y_tab][x_tab] && (alive < 2 || alive > 3))
     {
         next_tab[y_tab][x_tab] = 0;
         draw_cell(img, x_tab, y_tab, 0x000000);
@@ -67,11 +67,6 @@ void check_if_alive(__uint8_t tab[15][20], __uint8_t next_tab[15][20], int x_tab
     {
         next_tab[y_tab][x_tab] = 1;
         draw_cell(img, x_tab, y_tab, 0x00FF00);
-    }
-    else if (tab[y_tab][x_tab] && alive > 3)
-    {
-        next_tab[y_tab][x_tab] = 0;
-        draw_cell(img, x_tab, y_tab, 0x000000);
     }
     else if (!tab[y_tab][x_tab] && alive == 3)
     {
