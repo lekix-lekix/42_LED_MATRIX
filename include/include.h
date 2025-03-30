@@ -6,8 +6,10 @@
 #define G_WIDTH 20
 #define G_HEIGHT 15
 
-#define GRID_X W_WIDTH / G_WIDTH 
-#define GRID_Y W_HEIGHT / G_HEIGHT
+// #define GRID_X W_WIDTH / G_WIDTH 
+// #define GRID_Y W_HEIGHT / G_HEIGHT
+# define GRID_X 40
+# define GRID_Y 40
 
 #include "../minilibx-linux/mlx.h"
 #include <stdlib.h>
