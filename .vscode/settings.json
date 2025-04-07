@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.embeddedhtml": "html",
+    "include.h": "c"
+  },
+  "idf.pythonInstallPath": "/usr/bin/python3"
+}

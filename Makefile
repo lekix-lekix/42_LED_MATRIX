@@ -6,7 +6,7 @@
 #    By: lekix <lekix@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/13 16:29:27 by kipouliq          #+#    #+#              #
-#    Updated: 2025/03/27 22:43:59 by lekix            ###   ########.fr        #
+#    Updated: 2025/04/07 22:13:36 by lekix            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,10 @@ CXX = gcc
 CFLAGS = -Wall -Wextra -Werror -g
 
 SRCS = ./src/mlx_utils.c \
-		./src/main.c
+		./src/main.c \
+		./src/radial_gradient.c \
+		./src/linear_gradient.c \
+		./src/conway.c
 
 PATH_MLX = ./minilibx-linux
 

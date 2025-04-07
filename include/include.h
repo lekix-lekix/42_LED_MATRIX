@@ -6,8 +6,6 @@
 #define G_WIDTH 20
 #define G_HEIGHT 15
 
-// #define GRID_X W_WIDTH / G_WIDTH 
-// #define GRID_Y W_HEIGHT / G_HEIGHT
 # define GRID_X 40
 # define GRID_Y 40
 
@@ -19,6 +17,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <math.h>
 
 typedef struct s_mlx
 {
@@ -43,9 +42,21 @@ typedef struct cell
     int y;
 }                   t_cell;
 
+/******* MLX ********/
 t_mlx	start_mlx(int width, int height);
 t_img	*init_img(t_mlx *window);
 int	    *get_pixel_from_img(t_img *img, int x, int y);
 void	img_pix_put(t_img *img, int x, int y, int color);
+void    draw_cell(t_img *img, int x, int y, int color);
+void    draw_grid(t_img *img, int color);
+void    push_img(t_img *img, t_mlx *window);
+
+void    radial_loop(t_mlx *window);
+void    linear_loop(t_mlx *window);
+int     conway_loop(t_mlx *param_window);
+
+int     wheel(__uint8_t pos);
+
+
 
 #endif

@@ -32,6 +32,37 @@ t_img	*init_img(t_mlx *window)
     return (img);
 }
 
+void draw_cell(t_img *img, int x, int y, int color)
+{
+    int x_limit = (x + 1) * (GRID_X - 1);
+    int y_limit = (y + 1) * (GRID_Y - 1);
+    int i = y * (GRID_Y - 1);
+    int j;
+
+    while (i < y_limit)
+    {
+        j = x * (GRID_X - 1);
+        while (j < x_limit)
+        {
+            img_pix_put(img, j, i, color);
+            j++;
+        }
+        i++;
+    }
+}
+
+void draw_grid(t_img *img, int color)
+{
+    for (int i = 0; i < W_HEIGHT; i++)
+    {
+        for (int j = 0; j < W_WIDTH; j++)
+        {
+            if (j % (GRID_Y - 1) == 0 || i % (GRID_X - 1) == 0)
+                img_pix_put(img, j, i, color);
+        }
+    }
+}
+
 int	*get_pixel_from_img(t_img *img, int x, int y)
 {
 	char	*pixel;
@@ -46,4 +77,11 @@ void	img_pix_put(t_img *img, int x, int y, int color)
 
 	pixel = img->img_addr + (y * img->line_len + x * (img->bpp / 8));
 	*(int *)pixel = color;
+}
+
+void push_img(t_img *img, t_mlx *window)
+{
+    mlx_put_image_to_window(window->mlx_ptr, window->win_ptr, img->img_ptr, 0, 0);
+    mlx_destroy_image(window->mlx_ptr, img->img_ptr);
+    free(img);
 }
