@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define UP_KEY      65362
+#define DOWN_KEY    65364
+
 typedef struct s_mlx
 {
 	void			*mlx_ptr;
@@ -51,7 +54,7 @@ void    draw_cell(t_img *img, int x, int y, int color);
 void    draw_grid(t_img *img, int color);
 void    push_img(t_img *img, t_mlx *window);
 
-void    radial_loop(t_mlx *window);
+int    radial_loop(t_mlx *window);
 void    linear_loop(t_mlx *window);
 int     conway_loop(t_mlx *param_window);
 
