@@ -1,0 +1,283 @@
+#include "../include/include.h"
+
+int handle_keys(int key);
+
+float square(float nb)
+{
+    return (nb * nb);
+}
+
+float get_norm_distance(t_cell *cell, t_cell *center, float max_distance)
+{
+    float distance_squared = square(cell->x - center->x) + square(cell->y - center->y);
+    return (distance_squared / square(max_distance));
+}
+
+float branches = -2.0f;
+float pixellization = 2.90f; // 1,
+float spiral_speed = 0.01f;
+float anim_speed = 0.0010f;
+int   color_mode = 0;
+int   nb_colors = 0;
+int   next_color = 3;
+int   mode = 0;
+
+int   transition_start_frame = 0;
+int   restart_frame = 0;
+int   animation_restart = 0;
+
+int   frame = 0;
+int   cell_state[G_HEIGHT][G_WIDTH] = {0};
+
+
+float clamp(float value, float min, float max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
+void reset_cell_state()
+{
+    for (int i = 0; i < G_WIDTH; i++)
+    {
+        for (int j = 0; j < G_HEIGHT; j++)
+            cell_state[i][j] = 0;
+    }
+}
+
+void radial_gradient(t_mlx *window)
+{
+    t_img *img = init_img(window);
+
+    t_cell cell;
+    t_cell center = {9, 7};
+    float max_distance = 12.5;
+    int   colors[5];
+    float color;
+    // static transition_radius = 0;
+    
+    // int colors_nb = nb_colors;
+    switch (color_mode)
+    {
+        case 0:
+            palette_one(colors);
+            break;
+
+        case 1:
+            palette_two(colors);
+            break;
+
+        case 2:
+            palette_three(colors);
+            break;
+
+        case 3:
+            palette_four(colors);
+            break;
+
+        default:
+            break;
+    }
+    float form = -10.0f;         // -2, -200
+
+    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.003f, 0.0f, 1.0f);
+
+    for (int i = 0; i < G_WIDTH; i++)
+    {
+        for (int j = 0; j < G_HEIGHT; j++)
+        {
+            cell.x = i;
+            cell.y = j;
+            float angle = atan2(cell.y - center.y, cell.x - center.x);
+            float distance = get_norm_distance(&cell, &center, max_distance);
+            float r = distance * (form + (pixellization * sin(branches * angle)));
+            float raw_color = (r / max_distance + (float)frame * anim_speed);
+            // float norm_r = r / max_distance;
+            color = fmodf(fabsf(raw_color), 1.0f);
+
+            if (transition_start_frame)
+            {
+                float propagation = clamp((frame - transition_start_frame) * 0.005f, 0.0f, 1.0f);
+                
+                if (distance <= propagation)
+                    cell_state[i][j] = 1;
+
+                if (cell_state[i][j] == 1)
+                    draw_cell(img, i, j, colors[next_color]);
+                else
+                    draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+            }
+            else if (animation_restart)
+            {
+                // printf("anim restart\n");
+                if (distance > anim_relaunch_radius)
+                    draw_cell(img, i, j, colors[next_color]);
+                else
+                    draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+                    // Quand relance anim est finie, on désactive le mode "reprise"
+            if (animation_restart && anim_relaunch_radius >= 1.0f)
+            {
+                printf("stop anim\n");
+                animation_restart = 0;
+            }
+            }
+            else
+                draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+                        // printf("i = %d j = %d\n", i, j);
+        }
+    }
+    push_img(img, window);
+    if (transition_start_frame)
+    {
+        int all_cells_converted = 1;
+        for (int i = 0; i < G_WIDTH; i++)
+        {
+            for (int j = 0; j < G_HEIGHT; j++)
+            {
+                if (cell_state[i][j] == 0)
+                {
+                    all_cells_converted = 0;
+                    break;
+                }
+            }
+            if (!all_cells_converted)
+                break;
+        }
+    
+        if (all_cells_converted)
+        {
+            printf("All cells converted\n");
+            reset_cell_state(); // remet cell_state à 0
+            nb_colors = (nb_colors + 1) % 5;     // ajoute la nouvelle couleur
+            printf("nb_colors = %d\n", nb_colors);
+            transition_start_frame = 0;
+            restart_frame = frame;
+            animation_restart = 1;
+        }
+    }
+}
+
+void radial_gradient_round(t_mlx *window, int frame)
+{
+    t_img *img = init_img(window);
+    
+    t_cell cell;
+    t_cell center = {9, 7};
+    float norm_distance;
+    float max_distance = 12.5;
+    float wave;
+    
+    for (int i = 0; i < G_WIDTH; i++)
+    {
+        for (int j = 0; j < G_HEIGHT; j++)
+        {
+            cell.x = i;
+            cell.y = j;
+            norm_distance = get_norm_distance(&cell, &center, max_distance);
+            wave = (sin(norm_distance / 1.0f) - (frame / 500.0f) + 1) / 2;
+            draw_cell(img, i, j, wheel(wave * 255));
+        }
+    }
+    push_img(img, window);
+}
+
+void spiral(t_mlx *window, int frame)
+{
+    t_img *img = init_img(window);
+    
+    t_cell cell;
+    t_cell center = {9, 7};
+    float max_distance = 12.5;
+    float color;
+    
+    // float anim_speed = 0.003f;
+    // /* float  */branches = -10.0f;      // 5, 3, 10 & +
+    // float form = -2.0f;         // -2, -200
+
+    for (int i = 0; i < G_WIDTH; i++)
+    {
+        for (int j = 0; j < G_HEIGHT; j++)
+        {
+            cell.x = i;
+            cell.y = j;
+            float angle = atan2(cell.y - center.y, cell.x - center.x);
+            float distance = get_norm_distance(&cell, &center, max_distance);
+            float spiral = angle + distance / 2.5f + frame * spiral_speed;
+            // spiral += frame * spiral_speed; // speed
+            color = fmodf(spiral * 50.0f, 255.0f);
+            draw_cell(img, i, j, wheel(color));
+        }
+    }
+    push_img(img, window);
+}
+
+int handle_keys(int key)
+{
+    if (key == 65307)
+        exit(0);
+    else if (key == UP_KEY && mode == 0)
+        branches += 0.1f;
+    else if (key == DOWN_KEY && mode == 0)
+        branches -= 0.1f;
+    else if (key == 119 && mode == 0)
+        pixellization += 0.1f;
+    else if (key == 115 && mode == 0)
+        pixellization -= 0.1f;
+    else if (key == UP_KEY && mode == 2)
+        spiral_speed += 0.01f;
+    else if (key == DOWN_KEY && mode == 2)
+        spiral_speed -= 0.01f;
+    else if (key == 65361)
+        mode = (mode + 1 ) % 3;
+    else if (key == 100)
+        color_mode = (color_mode + 1) % 5;
+    else if (key == 110)
+        transition_start_frame = frame;
+    else if (key == 107)
+        nb_colors = (nb_colors + 1) % 2;
+    else if (key == 61)
+        anim_speed += 0.0001;
+    else if (key == 45 && anim_speed > 0)
+        anim_speed -= 0.0001;
+    printf("b = %f p = %f\n", branches, pixellization);
+    printf("anim speed = %f\n", anim_speed);
+    printf("color mode = %d\n", color_mode);
+    printf("key = %d\n",key);
+    // printf("form = %f\n", *form);
+    return 0;
+}
+
+int start_radial(t_mlx *window)
+{
+    // printf("frame = %d\n")
+    if (mode == 0)
+        radial_gradient(window);
+    else if (mode == 1)
+        radial_gradient_round(window, frame);
+    else
+        spiral(window, frame);
+    frame++;
+    return (0); 
+}
+
+typedef struct s_params
+{
+    t_mlx   *window;
+}   t_params;
+
+void *handle_stuff(void *data)
+{
+    t_params *params = (t_params *)data;
+    mlx_hook(params->window->win_ptr, 2, 1L << 0, handle_keys, NULL);
+    mlx_loop(params->window->mlx_ptr);
+    return NULL;
+}
+
+int radial_loop(t_mlx *window)
+{
+    mlx_hook(window->win_ptr, 2, 1L << 0, handle_keys, &pixellization);
+    mlx_loop_hook(window->mlx_ptr, &start_radial, window);
+    mlx_loop(window->mlx_ptr);
+    return (0);
+}
