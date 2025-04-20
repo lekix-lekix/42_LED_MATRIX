@@ -19,7 +19,7 @@ float spiral_speed = 0.01f;
 float anim_speed = 0.0010f;
 int   color_mode = 0;
 int   nb_colors = 0;
-int   next_color = 3;
+int   next_color = 2;
 int   mode = 0;
 
 int   transition_start_frame = 0;
@@ -81,7 +81,7 @@ void radial_gradient(t_mlx *window)
     }
     float form = -10.0f;         // -2, -200
 
-    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.003f, 0.0f, 1.0f);
+    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.001f, 0.0f, 1.0f);
 
     for (int i = 0; i < G_WIDTH; i++)
     {
@@ -112,7 +112,7 @@ void radial_gradient(t_mlx *window)
             {
                 // printf("anim restart\n");
                 if (distance > anim_relaunch_radius)
-                    draw_cell(img, i, j, colors[next_color]);
+                    draw_cell(img, i, j, colors[next_color - 1]);
                 else
                     draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
                     // Quand relance anim est finie, on désactive le mode "reprise"
@@ -148,8 +148,9 @@ void radial_gradient(t_mlx *window)
         if (all_cells_converted)
         {
             printf("All cells converted\n");
-            reset_cell_state(); // remet cell_state à 0
+            reset_cell_state(); 
             nb_colors = (nb_colors + 1) % 5;     // ajoute la nouvelle couleur
+            next_color = (next_color + 1) % 5;
             printf("nb_colors = %d\n", nb_colors);
             transition_start_frame = 0;
             restart_frame = frame;
