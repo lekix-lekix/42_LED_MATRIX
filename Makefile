@@ -6,7 +6,7 @@
 #    By: lekix <lekix@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/13 16:29:27 by kipouliq          #+#    #+#              #
-#    Updated: 2025/04/20 03:04:54 by lekix            ###   ########.fr        #
+#    Updated: 2025/04/23 01:39:39 by lekix            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,7 @@ NAME = LED_MATRIX
 
 CXX = gcc
 
-CFLAGS = -Wall -Wextra -Werror -Wno-conversions -pthread
+CFLAGS = -Wall -Wextra -Werror -Wno-conversions -g
 
 SRCS = ./src/mlx_utils.c \
 		./src/main.c \

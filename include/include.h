@@ -18,7 +18,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
-#include <pthread.h>
+#include <fcntl.h>
+
 
 #define UP_KEY      65362
 #define DOWN_KEY    65364
@@ -29,6 +30,7 @@ typedef struct s_mlx
 	void			*win_ptr;
 	int				width;
 	int				height;
+    FILE            *sensor_fd;
 }					t_mlx;
 
 typedef struct s_img

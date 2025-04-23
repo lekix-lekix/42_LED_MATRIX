@@ -251,7 +251,16 @@ int handle_keys(int key)
 
 int start_radial(t_mlx *window)
 {
-    // printf("frame = %d\n")
+    char sensor_line[50];
+    float distance;
+
+    fseek(window->sensor_fd, -1024, SEEK_END);
+    fgets(sensor_line, sizeof(sensor_line), window->sensor_fd);
+    printf("line = %s\n", sensor_line);
+    distance = atof(sensor_line);
+    printf("distance = %f\n", distance);
+    if (distance < 20)
+        pixellization = distance;
     if (mode == 0)
         radial_gradient(window);
     else if (mode == 1)
@@ -259,6 +268,7 @@ int start_radial(t_mlx *window)
     else
         spiral(window, frame);
     frame++;
+    // free(sensor_line);
     return (0); 
 }
 
@@ -267,16 +277,12 @@ typedef struct s_params
     t_mlx   *window;
 }   t_params;
 
-void *handle_stuff(void *data)
-{
-    t_params *params = (t_params *)data;
-    mlx_hook(params->window->win_ptr, 2, 1L << 0, handle_keys, NULL);
-    mlx_loop(params->window->mlx_ptr);
-    return NULL;
-}
-
 int radial_loop(t_mlx *window)
 {
+    FILE *fd = fopen("./distance_log", "r");
+    if (!fd)
+        perror("open");
+    window->sensor_fd = fd;
     mlx_hook(window->win_ptr, 2, 1L << 0, handle_keys, &pixellization);
     mlx_loop_hook(window->mlx_ptr, &start_radial, window);
     mlx_loop(window->mlx_ptr);
