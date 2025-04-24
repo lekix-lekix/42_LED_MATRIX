@@ -14,9 +14,9 @@ float get_norm_distance(t_cell *cell, t_cell *center, float max_distance)
 }
 
 float branches = -2.0f;
-float pixellization = 2.90f; // 1,
+float pixellization =  1; // 2.90f; // 1,
 float spiral_speed = 0.01f;
-float anim_speed = 0.0010f;
+float anim_speed = 0.01f;
 int   color_mode = 0;
 int   nb_colors = 0;
 int   next_color = 2;
@@ -81,7 +81,7 @@ void radial_gradient(t_mlx *window)
     }
     float form = -10.0f;         // -2, -200
 
-    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.001f, 0.0f, 1.0f);
+    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.005f, 0.0f, 1.0f);
 
     for (int i = 0; i < G_WIDTH; i++)
     {
@@ -241,34 +241,131 @@ int handle_keys(int key)
         anim_speed += 0.0001;
     else if (key == 45 && anim_speed > 0)
         anim_speed -= 0.0001;
-    printf("b = %f p = %f\n", branches, pixellization);
-    printf("anim speed = %f\n", anim_speed);
-    printf("color mode = %d\n", color_mode);
-    printf("key = %d\n",key);
+    // printf("b = %f p = %f\n", branches, pixellization);
+    // printf("anim speed = %f\n", anim_speed);
+    // printf("color mode = %d\n", color_mode);
+    // printf("key = %d\n",key);
     // printf("form = %f\n", *form);
     return 0;
 }
 
+// Configuration du port série
+int configure_serial_port(int fd) {
+    struct termios options;
+
+    // Récupérer les paramètres actuels du port série
+    if (tcgetattr(fd, &options) < 0) {
+        perror("Erreur lors de la récupération des paramètres du port série");
+        return -1;
+    }
+
+    // Configurer les paramètres : 115200 bauds, 8 bits de données, pas de parité, 1 bit d'arrêt
+    cfsetispeed(&options, B115200);  // vitesse de réception
+    cfsetospeed(&options, B115200);  // vitesse d'émission
+
+    options.c_cflag &= ~PARENB;    // Pas de parité
+    options.c_cflag &= ~CSTOPB;    // 1 bit d'arrêt
+    options.c_cflag &= ~CSIZE;
+    options.c_cflag |= CS8;        // 8 bits de données
+
+    options.c_cflag |= CREAD | CLOCAL;  // Activer la lecture et ignorer les lignes de contrôle
+
+    // Appliquer les paramètres configurés
+    if (tcsetattr(fd, TCSANOW, &options) < 0) {
+        perror("Erreur lors de l'application des paramètres du port série");
+        return -1;
+    }
+
+    return 0;
+}
+
+long int	get_time_elapsed(t_timeval *starting_time)
+{
+	t_timeval	current_time;
+	long int	time_elapsed;
+
+	gettimeofday(&current_time, NULL);
+	time_elapsed = ((current_time.tv_sec - starting_time->tv_sec) * 1000)
+		+ ((current_time.tv_usec - starting_time->tv_usec) * 0.001);
+	return (time_elapsed);
+}
+
+float read_sensor_data(int uart_fd)
+{
+    size_t  bytes_read;
+    char    buffer[BUFFER_SIZE];
+    float   distance; 
+
+    bytes_read = read(uart_fd, buffer, sizeof(buffer) - 1);  // Lire depuis le port série
+    if (bytes_read > 0) 
+    {
+        buffer[bytes_read] = '\0';  // Ajouter un terminateur de chaîne
+        distance = atof(buffer);
+    }
+    return (distance);
+}
+
+void copy_float_tab(float *src, float *dst, int size)
+{
+    for (int i = 0; i < size; i++)
+        dst[i] = src[i];
+}
+
+void get_distance_tab(int uart_fd, float *tab, int size, int fill)
+{
+    if (fill)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            tab[i] = read_sensor_data(uart_fd);
+            while (tab[i] == 0) tab[i] = read_sensor_data(uart_fd);
+        }
+        return ;
+    }
+    float tab_save[size];
+    copy_float_tab(tab, tab_save, size);
+    tab[0] = read_sensor_data(uart_fd) / 100;
+    for (int i = 1; i < size; i++)
+        tab[i] = read_sensor_data(uart_fd) / 100;
+}
+
+float get_avg_ftab(float *tab, int size)
+{
+    float avg = 0;
+
+    for (int i = 0; i < size; i++)
+        avg += tab[i];
+    return (avg / size);
+}
+
+float lerp(float a, float b, float t)
+{
+    return (a * (1 - t) + b * t);
+}
+
 int start_radial(t_mlx *window)
 {
-    char sensor_line[50];
-    float distance;
-
-    fseek(window->sensor_fd, -1024, SEEK_END);
-    fgets(sensor_line, sizeof(sensor_line), window->sensor_fd);
-    printf("line = %s\n", sensor_line);
-    distance = atof(sensor_line);
-    printf("distance = %f\n", distance);
-    if (distance < 20)
-        pixellization = distance;
-    if (mode == 0)
-        radial_gradient(window);
-    else if (mode == 1)
-        radial_gradient_round(window, frame);
+    float            target_frame_time_ms = 16.666f; // 1000 / 60 (fps)
+    static float     distance_tab[10];
+    float            distance;
+    long int         frame_time;
+    t_timeval        timer;
+    
+    if (frame == 0)
+        get_distance_tab(window->uart_fd, distance_tab, 10, 1);
     else
-        spiral(window, frame);
+        get_distance_tab(window->uart_fd, distance_tab, 10, 0);
+    distance = get_avg_ftab(distance_tab, 10);
+    // printf("avg distance = %f\n", distance);
+    if (distance < 20)
+        branches = lerp(branches, distance, 0.05f);
+    gettimeofday(&timer, NULL);
+    radial_gradient(window);
+    frame_time = get_time_elapsed(&timer);
+    if (target_frame_time_ms < frame_time)
+        usleep((target_frame_time_ms - frame_time) * 1000);
+    // printf("frame_time = %zu\n", frame_time);
     frame++;
-    // free(sensor_line);
     return (0); 
 }
 
@@ -279,10 +376,18 @@ typedef struct s_params
 
 int radial_loop(t_mlx *window)
 {
-    FILE *fd = fopen("./distance_log", "r");
-    if (!fd)
-        perror("open");
-    window->sensor_fd = fd;
+    window->uart_fd = open(SERIAL_PORT, O_RDONLY | O_NOCTTY);
+    if (window->uart_fd == -1) 
+    {
+        perror("Erreur d'ouverture du port série");
+        return 1;
+    }
+    // Configurer le port série
+    if (configure_serial_port(window->uart_fd) < 0) 
+    {
+        close(window->uart_fd);
+        return 1;
+    }
     mlx_hook(window->win_ptr, 2, 1L << 0, handle_keys, &pixellization);
     mlx_loop_hook(window->mlx_ptr, &start_radial, window);
     mlx_loop(window->mlx_ptr);

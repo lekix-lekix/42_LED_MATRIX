@@ -14,15 +14,23 @@
 # define GRID_COLOR 0x0000FF
 
 #include "../minilibx-linux/mlx.h"
+#include <sys/time.h>
+#include <sys/select.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
 #include <fcntl.h>
-
+#include <termio.h>
 
 #define UP_KEY      65362
 #define DOWN_KEY    65364
+
+#define SERIAL_PORT "/dev/ttyUSB0"  // Change ceci en fonction de ton port série
+#define BUFFER_SIZE 256
+
+
+typedef struct timeval t_timeval;
 
 typedef struct s_mlx
 {
@@ -30,7 +38,7 @@ typedef struct s_mlx
 	void			*win_ptr;
 	int				width;
 	int				height;
-    FILE            *sensor_fd;
+    int             uart_fd;
 }					t_mlx;
 
 typedef struct s_img
@@ -47,6 +55,7 @@ typedef struct cell
     int x;
     int y;
 }                   t_cell;
+
 
 /******* MLX ********/
 t_mlx	start_mlx(int width, int height);
