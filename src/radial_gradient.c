@@ -267,6 +267,11 @@ int configure_serial_port(int fd) {
     options.c_cflag &= ~CSTOPB;    // 1 bit d'arrêt
     options.c_cflag &= ~CSIZE;
     options.c_cflag |= CS8;        // 8 bits de données
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // mode raw
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);         // désactiver le flow control logiciel
+    options.c_oflag &= ~OPOST;                          // mode raw output
+    options.c_cc[VMIN]  = 8;                            // attendre 8 octets minimum
+    options.c_cc[VTIME] = 10;         
 
     options.c_cflag |= CREAD | CLOCAL;  // Activer la lecture et ignorer les lignes de contrôle
 
@@ -275,7 +280,6 @@ int configure_serial_port(int fd) {
         perror("Erreur lors de l'application des paramètres du port série");
         return -1;
     }
-
     return 0;
 }
 
@@ -302,6 +306,7 @@ float read_sensor_data(int uart_fd)
         buffer[bytes_read] = '\0';
         distance = atof(buffer);
     }
+    // printf("buffer = %s bytes read = %ld\n", buffer, bytes_read);
     return (distance);
 }
 
@@ -316,17 +321,17 @@ void get_distance_tab(int uart_fd, float *tab, int size, int fill)
     if (fill)
     {
         for (int i = 0; i < size; i++)
-        {
-            tab[i] = read_sensor_data(uart_fd);
-            while (tab[i] == 0) tab[i] = read_sensor_data(uart_fd);
-        }
+            tab[i] = read_sensor_data(uart_fd) / 1000;
         return ;
     }
-    float tab_save[size];
-    copy_float_tab(tab, tab_save, size);
-    tab[0] = read_sensor_data(uart_fd) / 1000;
-    for (int i = 1; i < size; i++)
-        tab[i] = read_sensor_data(uart_fd) / 1000;
+    float sensor_data = read_sensor_data(uart_fd) / 1000;
+    printf("sensor data = %f\n", sensor_data);
+    for (int i = 0; i < size - 1; i++)
+        tab[i] = tab[i + 1];
+    tab[size - 1] = sensor_data;
+    for (int i = 0; i < size - 1; i++)
+        printf("tab[%d] = %f\n", i, tab[i]);
+    printf("=========\n");
 }
 
 float get_avg_ftab(float *tab, int size)
@@ -343,11 +348,6 @@ float lerp(float a, float b, float t)
     return (a * (1 - t) + b * t);
 }
 
-// float normalize_value(float min, float max, float value)
-// {
-//     return (min + (value - min) / (max - value) * (max - min));
-// }
-
 int start_radial(t_mlx *window)
 {
     float            target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
@@ -361,7 +361,8 @@ int start_radial(t_mlx *window)
     else
         get_distance_tab(window->uart_fd, distance_tab, 10, 0);
     distance = get_avg_ftab(distance_tab, 10);
-    pixellization = lerp(pixellization, distance, 0.005f);
+    distance = clamp(distance, 0.0f, 100.0f);
+    pixellization = lerp(pixellization, distance, 0.1f);
     printf("branches = %f\n", pixellization);
     gettimeofday(&timer, NULL);
     radial_gradient(window);
