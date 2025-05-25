@@ -32,7 +32,6 @@ int   cell_state[G_HEIGHT][G_WIDTH] = {0};
 
 float clamp(float value, float min, float max)
 {
-
     if (value < min) return min;
     if (value > max) return max;
     return value;
@@ -183,35 +182,6 @@ void radial_gradient_round(t_mlx *window, int frame)
     push_img(img, window);
 }
 
-void spiral(t_mlx *window, int frame)
-{
-    t_img *img = init_img(window);
-    
-    t_cell cell;
-    t_cell center = {9, 7};
-    float max_distance = 12.5;
-    float color;
-    
-    // float anim_speed = 0.003f;
-    // /* float  */branches = -10.0f;      // 5, 3, 10 & +
-    // float form = -2.0f;         // -2, -200
-
-    for (int i = 0; i < G_WIDTH; i++)
-    {
-        for (int j = 0; j < G_HEIGHT; j++)
-        {
-            cell.x = i;
-            cell.y = j;
-            float angle = atan2(cell.y - center.y, cell.x - center.x);
-            float distance = get_norm_distance(&cell, &center, max_distance);
-            float spiral = angle + distance / 2.5f + frame * spiral_speed;
-            // spiral += frame * spiral_speed; // speed
-            color = fmodf(spiral * 50.0f, 255.0f);
-            draw_cell(img, i, j, wheel(color));
-        }
-    }
-    push_img(img, window);
-}
 
 int handle_keys(int key)
 {
@@ -306,7 +276,7 @@ float read_sensor_data(int uart_fd)
         buffer[bytes_read] = '\0';
         distance = atof(buffer);
     }
-    // printf("buffer = %s bytes read = %ld\n", buffer, bytes_read);
+    printf("buffer = %s bytes read = %ld\n", buffer, bytes_read);
     return (distance);
 }
 
@@ -318,19 +288,28 @@ void copy_float_tab(float *src, float *dst, int size)
 
 void get_distance_tab(int uart_fd, float *tab, int size, int fill)
 {
+    float sensor_data = 0;
     if (fill)
     {
         for (int i = 0; i < size; i++)
-            tab[i] = read_sensor_data(uart_fd) / 1000;
+        {
+            sensor_data = read_sensor_data(uart_fd);
+            if (sensor_data == -1)
+                sensor_data = 0;
+            tab[i] = sensor_data / 1000;
+        }
         return ;
     }
-    float sensor_data = read_sensor_data(uart_fd) / 1000;
-    printf("sensor data = %f\n", sensor_data);
+    sensor_data = read_sensor_data(uart_fd);
+    // printf("sensor data = %f\n", sensor_data);
+    if (sensor_data == -1)
+        sensor_data = 0;
+    // printf("sensor data = %f\n", sensor_data);
     for (int i = 0; i < size - 1; i++)
         tab[i] = tab[i + 1];
     tab[size - 1] = sensor_data;
-    for (int i = 0; i < size - 1; i++)
-        printf("tab[%d] = %f\n", i, tab[i]);
+    // for (int i = 0; i < size - 1; i++)
+        // printf("tab[%d] = %f\n", i, tab[i]);
     printf("=========\n");
 }
 
@@ -362,14 +341,13 @@ int start_radial(t_mlx *window)
         get_distance_tab(window->uart_fd, distance_tab, 10, 0);
     distance = get_avg_ftab(distance_tab, 10);
     distance = clamp(distance, 0.0f, 100.0f);
-    pixellization = lerp(pixellization, distance, 0.1f);
+    pixellization = lerp(pixellization, distance, 0.2f);
     printf("branches = %f\n", pixellization);
     gettimeofday(&timer, NULL);
     radial_gradient(window);
     frame_time = get_time_elapsed(&timer);
     if (target_frame_time_ms < frame_time)
         usleep((target_frame_time_ms - frame_time) * 1000);
-    // printf("frame_time = %zu\n", frame_time);
     frame++;
     return (0); 
 }
