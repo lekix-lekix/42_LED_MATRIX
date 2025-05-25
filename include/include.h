@@ -56,6 +56,12 @@ typedef struct cell
     int y;
 }                   t_cell;
 
+typedef struct color
+{
+    int r;
+    int g;
+    int b;
+}                   t_color;
 
 /******* MLX ********/
 t_mlx	start_mlx(int width, int height);

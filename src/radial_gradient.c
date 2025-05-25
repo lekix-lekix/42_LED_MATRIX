@@ -21,6 +21,7 @@ int   color_mode = 0;
 int   nb_colors = 0;
 int   next_color = 2;
 int   mode = 0;
+int   active_palette[5];
 
 int   transition_start_frame = 0;
 int   restart_frame = 0;
@@ -28,7 +29,6 @@ int   animation_restart = 0;
 
 int   frame = 0;
 int   cell_state[G_HEIGHT][G_WIDTH] = {0};
-
 
 float clamp(float value, float min, float max)
 {
@@ -55,9 +55,11 @@ void radial_gradient(t_mlx *window)
     float max_distance = 12.5;
     int   colors[5];
     float color;
+
     // static transition_radius = 0;
     
     // int colors_nb = nb_colors;
+
     switch (color_mode)
     {
         case 0:
@@ -105,7 +107,7 @@ void radial_gradient(t_mlx *window)
                 if (cell_state[i][j] == 1)
                     draw_cell(img, i, j, colors[next_color]);
                 else
-                    draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+                    draw_cell(img, i, j, get_color_gradient(color, active_palette, nb_colors));
             }
             else if (animation_restart)
             {
@@ -113,7 +115,7 @@ void radial_gradient(t_mlx *window)
                 if (distance > anim_relaunch_radius)
                     draw_cell(img, i, j, colors[next_color - 1]);
                 else
-                    draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+                    draw_cell(img, i, j, get_color_gradient(color, active_palette, nb_colors));
                     // Quand relance anim est finie, on désactive le mode "reprise"
             if (animation_restart && anim_relaunch_radius >= 1.0f)
             {
@@ -122,7 +124,7 @@ void radial_gradient(t_mlx *window)
             }
             }
             else
-                draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+                draw_cell(img, i, j, get_color_gradient(color, active_palette, nb_colors));
                         // printf("i = %d j = %d\n", i, j);
         }
     }
@@ -181,7 +183,6 @@ void radial_gradient_round(t_mlx *window, int frame)
     }
     push_img(img, window);
 }
-
 
 int handle_keys(int key)
 {
@@ -327,6 +328,18 @@ float lerp(float a, float b, float t)
     return (a * (1 - t) + b * t);
 }
 
+float norm_value(float value, float min, float max)
+{
+    if (max - min == 0.0f)
+        return 0.0f;  // pour éviter une division par zéro
+    float t = (value - min) / (max - min);
+    if (t < 0.0f)
+        return 0.0f;
+    if (t > 1.0f)
+        return 1.0f;
+    return t;
+}
+
 int start_radial(t_mlx *window)
 {
     float            target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
@@ -334,15 +347,23 @@ int start_radial(t_mlx *window)
     float            distance;
     long int         frame_time;
     t_timeval        timer;
+    int colors_1[5];
+    int colors_2[5];
     
+    palette_one(colors_1);
+    palette_two(colors_2);
     if (frame == 0)
         get_distance_tab(window->uart_fd, distance_tab, 10, 1);
     else
         get_distance_tab(window->uart_fd, distance_tab, 10, 0);
     distance = get_avg_ftab(distance_tab, 10);
     distance = clamp(distance, 0.0f, 100.0f);
-    pixellization = lerp(pixellization, distance, 0.2f);
-    printf("branches = %f\n", pixellization);
+    distance = norm_value(distance, 0, 50.0f);
+    printf("distance = %f\n", distance);
+    for (int i = 0; i < 5; i++)
+        active_palette[i] = interpolate_color(colors_1[i], colors_2[i], distance);
+    // pixellization = lerp(pixellization, distance, 0.2f);
+    // printf("branches = %f\n", pixellization);
     gettimeofday(&timer, NULL);
     radial_gradient(window);
     frame_time = get_time_elapsed(&timer);
