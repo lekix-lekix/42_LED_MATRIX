@@ -14,9 +14,9 @@ float get_norm_distance(t_cell *cell, t_cell *center, float max_distance)
 }
 
 float branches = -2.0f;
-float pixellization =  1; // 2.90f; // 1,
+float pixellization =  10; // 2.90f; // 1,
 float spiral_speed = 0.01f;
-float anim_speed = 0.005f;
+float anim_speed = 0.001f;
 int   color_mode = 0;
 int   nb_colors = 0;
 int   next_color = 2;
@@ -27,6 +27,7 @@ int   transition_start_frame = 0;
 int   restart_frame = 0;
 int   animation_restart = 0;
 
+int   leds[15][20];
 int   frame = 0;
 int   cell_state[G_HEIGHT][G_WIDTH] = {0};
 
@@ -48,8 +49,8 @@ void reset_cell_state()
 
 void radial_gradient(t_mlx *window)
 {
-    t_img *img = init_img(window);
-
+    // t_img *img = init_img(window);
+    (void) window;
     t_cell cell;
     t_cell center = {9, 7};
     float max_distance = 12.5;
@@ -83,7 +84,7 @@ void radial_gradient(t_mlx *window)
     }
     float form = -10.0f;         // -2, -200
 
-    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.005f, 0.0f, 1.0f);
+    // float anim_relaunch_radius = clamp((frame - restart_frame) * 0.005f, 0.0f, 1.0f);
 
     for (int i = 0; i < G_WIDTH; i++)
     {
@@ -97,38 +98,39 @@ void radial_gradient(t_mlx *window)
             float raw_color = (r / max_distance + (float)frame * anim_speed);
             color = fmodf(fabsf(raw_color), 1.0f);
 
-            if (transition_start_frame)
-            {
-                float propagation = clamp((frame - transition_start_frame) * 0.005f, 0.0f, 1.0f);
+            // if (transition_start_frame)
+            // {
+            //     float propagation = clamp((frame - transition_start_frame) * 0.005f, 0.0f, 1.0f);
                 
-                if (distance <= propagation)
-                    cell_state[i][j] = 1;
+            //     if (distance <= propagation)
+            //         cell_state[i][j] = 1;
 
-                if (cell_state[i][j] == 1)
-                    draw_cell(img, i, j, colors[next_color]);
-                else
-                    draw_cell(img, i, j, get_color_gradient(color, active_palette, nb_colors));
-            }
-            else if (animation_restart)
-            {
-                // printf("anim restart\n");
-                if (distance > anim_relaunch_radius)
-                    draw_cell(img, i, j, colors[next_color - 1]);
-                else
-                    draw_cell(img, i, j, get_color_gradient(color, active_palette, nb_colors));
-                    // Quand relance anim est finie, on désactive le mode "reprise"
-            if (animation_restart && anim_relaunch_radius >= 1.0f)
-            {
-                printf("stop anim\n");
-                animation_restart = 0;
-            }
-            }
-            else
-                draw_cell(img, i, j, get_color_gradient(color, active_palette, nb_colors));
+            //     if (cell_state[i][j] == 1)
+            //         draw_cell(img, i, j, colors[next_color]);
+            //     else
+            //         draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+            // }
+            // else if (animation_restart)
+            // {
+            //     // printf("anim restart\n");
+            //     if (distance > anim_relaunch_radius)
+            //         draw_cell(img, i, j, colors[next_color - 1]);
+            //     else
+            //         draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
+            //         // Quand relance anim est finie, on désactive le mode "reprise"
+            // if (animation_restart && anim_relaunch_radius >= 1.0f)
+            // {
+            //     printf("stop anim\n");
+            //     animation_restart = 0;
+            // }
+            // }
+            // else
+            leds[j][i] = get_color_gradient(color, colors, 5);
+            // draw_cell(img, i, j, get_color_gradient(color, colors, 5));
                         // printf("i = %d j = %d\n", i, j);
         }
     }
-    push_img(img, window);
+    // push_img(img, window);
     if (transition_start_frame)
     {
         int all_cells_converted = 1;
@@ -342,33 +344,68 @@ float norm_value(float value, float min, float max)
 
 int start_radial(t_mlx *window)
 {
-    float            target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
-    static float     distance_tab[10];
-    float            distance;
-    long int         frame_time;
-    t_timeval        timer;
-    int colors_1[5];
-    int colors_2[5];
+    // float            target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
+    // static float     distance_tab[10];
+    // float            distance;
+    // long int         frame_time;
+    // t_timeval        timer;
+    // int colors_1[5];
+    // int colors_2[5];
     
-    palette_one(colors_1);
-    palette_two(colors_2);
-    if (frame == 0)
-        get_distance_tab(window->uart_fd, distance_tab, 10, 1);
-    else
-        get_distance_tab(window->uart_fd, distance_tab, 10, 0);
-    distance = get_avg_ftab(distance_tab, 10);
-    distance = clamp(distance, 0.0f, 100.0f);
-    distance = norm_value(distance, 0, 50.0f);
-    printf("distance = %f\n", distance);
-    for (int i = 0; i < 5; i++)
-        active_palette[i] = interpolate_color(colors_1[i], colors_2[i], distance);
+    __uint8_t led_data[300 * 3];
+
+    // palette_one(colors_1);
+    // palette_two(colors_2);
+    // if (frame == 0)
+    //     get_distance_tab(window->uart_fd, distance_tab, 10, 1);
+    // else
+    //     get_distance_tab(window->uart_fd, distance_tab, 10, 0);
+    // distance = get_avg_ftab(distance_tab, 10);
+    // distance = clamp(distance, 0.0f, 100.0f);
+    // distance = norm_value(distance, 0, 50.0f);
+    // printf("distance = %f\n", distance);
+    // for (int i = 0; i < 5; i++)
+    //     active_palette[i] = interpolate_color(colors_1[i], colors_2[i], distance);
     // pixellization = lerp(pixellization, distance, 0.2f);
     // printf("branches = %f\n", pixellization);
-    gettimeofday(&timer, NULL);
+    // gettimeofday(&timer, NULL);
     radial_gradient(window);
-    frame_time = get_time_elapsed(&timer);
-    if (target_frame_time_ms < frame_time)
-        usleep((target_frame_time_ms - frame_time) * 1000);
+    // frame_time = get_time_elapsed(&timer);
+    // if (target_frame_time_ms < frame_time)
+    //     usleep((target_frame_time_ms - frame_time) * 1000);
+    // t_img *img = init_img(window);
+    // for (int i = 0; i < G_HEIGHT; i++)
+    // {
+    //     for (int j = 0; j < G_WIDTH; j++)
+    //     {
+    //         if (i % 2 != 0)
+    //             draw_cell(img, j, i, leds[i][19 - j]);  // c'est pas degueu d'imprimer cmme ca en mode reel
+    //         else
+    //             draw_cell(img, j, i, leds[i][j]);
+    //     }
+    //     // draw_cell(img, j, i, leds[i][j]);
+    // }
+    int led_i;
+    for (int i = 0; i < G_HEIGHT; i++)
+    {
+        for (int j = 0; j < G_WIDTH; j++)
+        {
+            if (i % 2 != 0)
+            {
+                led_data[led_i * 3 + 0] = get_r(leds[i][19 - j]);
+                led_data[led_i * 3 + 1] = get_g(leds[i][19 - j]);
+                led_data[led_i * 3 + 1] = get_b(leds[i][19 - j]);
+            }
+            else
+            {
+                led_data[led_i * 3 + 0] = get_r(leds[i][j]);
+                led_data[led_i * 3 + 1] = get_g(leds[i][j]);
+                led_data[led_i * 3 + 1] = get_b(leds[i][j]);
+            }
+        }
+        // draw_cell(img, j, i, leds[i][j]);
+    }
+    // push_img(img, window);
     frame++;
     return (0); 
 }
@@ -380,18 +417,18 @@ typedef struct s_params
 
 int radial_loop(t_mlx *window)
 {
-    window->uart_fd = open(SERIAL_PORT, O_RDONLY | O_NOCTTY);
-    if (window->uart_fd == -1) 
-    {
-        perror("Erreur d'ouverture du port série");
-        return 1;
-    }
-    // Configurer le port série
-    if (configure_serial_port(window->uart_fd) < 0) 
-    {
-        close(window->uart_fd);
-        return 1;
-    }
+    // window->uart_fd = open(SERIAL_PORT, O_RDONLY | O_NOCTTY);
+    // if (window->uart_fd == -1) 
+    // {
+    //     perror("Erreur d'ouverture du port série");
+    //     return 1;
+    // }
+    // // Configurer le port série
+    // if (configure_serial_port(window->uart_fd) < 0) 
+    // {
+    //     close(window->uart_fd);
+    //     return 1;
+    // }
     mlx_hook(window->win_ptr, 2, 1L << 0, handle_keys, &pixellization);
     mlx_loop_hook(window->mlx_ptr, &start_radial, window);
     mlx_loop(window->mlx_ptr);

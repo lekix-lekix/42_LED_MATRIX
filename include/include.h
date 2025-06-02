@@ -86,6 +86,9 @@ void	palette_three(int *colors);
 void	palette_four(int *colors);
 int	    interpolate_color(int color_a, int color_b, float t);
 int	    get_color_gradient(float iter, int *colors, int nb_colors);
+int	get_r(int trgb);
+int	get_g(int trgb);
+int	get_b(int trgb);
 
 float	normalize_value(float value, float min, float max);
 
