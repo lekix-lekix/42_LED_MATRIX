@@ -16,7 +16,7 @@ float get_norm_distance(t_cell *cell, t_cell *center, float max_distance)
 float branches = -2.0f;
 float pixellization =  10; // 2.90f; // 1,
 float spiral_speed = 0.01f;
-float anim_speed = 0.005f;
+float anim_speed = 0.002f;
 int   color_mode = 0;
 int   nb_colors = 0;
 int   next_color = 2;
@@ -97,7 +97,7 @@ void radial_gradient(t_mlx *window)
     }
     float form = -10.0f;         // -2, -200
 
-    // float anim_relaunch_radius = clamp((frame - restart_frame) * 0.005f, 0.0f, 1.0f);
+    float anim_relaunch_radius = clamp((frame - restart_frame) * 0.005f, 0.0f, 1.0f);
 
     for (int i = 0; i < G_WIDTH; i++)
     {
@@ -111,33 +111,33 @@ void radial_gradient(t_mlx *window)
             float raw_color = (r / max_distance + (float)frame * anim_speed);
             color = fmodf(fabsf(raw_color), 1.0f);
 
-            // if (transition_start_frame)
-            // {
-            //     float propagation = clamp((frame - transition_start_frame) * 0.005f, 0.0f, 1.0f);
+            if (transition_start_frame)
+            {
+                float propagation = clamp((frame - transition_start_frame) * 0.005f, 0.0f, 1.0f);
                 
-            //     if (distance <= propagation)
-            //         cell_state[i][j] = 1;
+                if (distance <= propagation)
+                    cell_state[i][j] = 1;
 
-            //     if (cell_state[i][j] == 1)
-            //         draw_cell(img, i, j, colors[next_color]);
-            //     else
-            //         draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
-            // }
-            // else if (animation_restart)
-            // {
-            //     // printf("anim restart\n");
-            //     if (distance > anim_relaunch_radius)
-            //         draw_cell(img, i, j, colors[next_color - 1]);
-            //     else
-            //         draw_cell(img, i, j, get_color_gradient(color, colors, nb_colors));
-            //         // Quand relance anim est finie, on désactive le mode "reprise"
-            // if (animation_restart && anim_relaunch_radius >= 1.0f)
-            // {
-            //     printf("stop anim\n");
-            //     animation_restart = 0;
-            // }
-            // }
-            // else
+                if (cell_state[i][j] == 1)
+                    leds[j][i] = colors[next_color];
+                else
+                    leds[j][i] = get_color_gradient(color, colors, nb_colors);
+            }
+            else if (animation_restart)
+            {
+                // printf("anim restart\n");
+                if (distance > anim_relaunch_radius)
+                    leds[j][i] = colors[next_color - 1];
+                else
+                    leds[j][i] = get_color_gradient(color, colors, nb_colors);
+                    // Quand relance anim est finie, on désactive le mode "reprise"
+            if (animation_restart && anim_relaunch_radius >= 1.0f)
+            {
+                printf("stop anim\n");
+                animation_restart = 0;
+            }
+            }
+            else
             leds[j][i] = get_color_gradient(color, colors, 5);
             // draw_cell(img, i, j, get_color_gradient(color, colors, 5));
                         // printf("i = %d j = %d\n", i, j);
@@ -302,17 +302,17 @@ void copy_float_tab(float *src, float *dst, int size)
         dst[i] = src[i];
 }
 
-void get_distance_tab(int uart_fd, float *tab, int size, int fill)
+void get_distance_tab(int uart_fd, float *tab, int size)
 {
     float sensor_data = 0;
-    if (fill)
+    if (tab[0] == -1)
     {
         for (int i = 0; i < size; i++)
         {
             sensor_data = read_sensor_data(uart_fd);
             if (sensor_data == -1)
                 sensor_data = 0;
-            tab[i] = sensor_data / 1000;
+            tab[i] = sensor_data;
         }
         return ;
     }
@@ -324,8 +324,8 @@ void get_distance_tab(int uart_fd, float *tab, int size, int fill)
     for (int i = 0; i < size - 1; i++)
         tab[i] = tab[i + 1];
     tab[size - 1] = sensor_data;
-    // for (int i = 0; i < size - 1; i++)
-        // printf("tab[%d] = %f\n", i, tab[i]);
+    for (int i = 0; i < size - 1; i++)
+        printf("tab[%d] = %f\n", i, tab[i]);
     printf("=========\n");
 }
 
@@ -355,38 +355,190 @@ float norm_value(float value, float min, float max)
     return t;
 }
 
-int start_radial(t_mlx *window)
+// int start_radial(void *data)
+// {
+//     // float            target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
+//     // static float     distance_tab[10];
+//     float               smoothed_distance = -1.0f;
+//     float               distance;
+//     // long int         frame_time;
+//     // t_timeval        timer;
+//     int colors_1[5];
+//     int colors_2[5];
+    
+//     // __uint8_t led_data[300 * 3];
+
+//     sensor_data_t *sensor_data = (sensor_data_t *)data;
+//     palette_one(colors_1);
+//     palette_two(colors_2);
+//     // if (frame == 0)
+//     //     get_distance_tab(window->uart_fd, distance_tab, 10, 1);
+//     // else
+//     //     get_distance_tab(window->uart_fd, distance_tab, 10, 0);
+//     // distance = get_avg_ftab(distance_tab, 10);
+//     // distance = clamp(distance, 0.0f, 100.0f);
+//     // distance = norm_value(distance, 0, 50.0f);
+//     // for (int i = 0; i < 10; i++)
+//     //     printf("dist tab = %f\n", distance_tab[i]);
+//     // printf("distance = %f\n", distance);
+//     // for (int i = 0; i < 5; i++)
+//     //     active_palette[i] = interpolate_color(colors_1[i], colors_2[i], distance);
+//     pthread_mutex_lock(sensor_data->avg_lock);
+//     distance = *(sensor_data->average);
+//     pthread_mutex_unlock(sensor_data->avg_lock);
+//     printf("distance in main = %f\n", distance);
+
+//     if (smoothed_distance < 0.0f)
+//         smoothed_distance = distance;
+
+//     // Clamp contre les grosses variations d'un coup
+//     float max_jump = 3.0f;
+//     float delta = distance - smoothed_distance;
+//     if (fabsf(delta) > max_jump)
+//         distance = smoothed_distance + max_jump * ((delta > 0) ? 1 : -1);
+
+//     // Lissage EMA (ici alpha = 0.05 pour douceur)
+//     float alpha = 0.15f;
+//     smoothed_distance = lerp(smoothed_distance, distance, alpha);
+
+//     // Mapping optionnel
+//     float normalized = normalize_value(smoothed_distance, 0.0f, 50.0f);
+//     float curved = powf(normalized, 1.5f);  // ou sans si tu veux linéaire
+
+//     // Application à ton visuel
+//     pixellization = curved * 12.0f; // admettons que 12 est le max utile pour ton rendu
+
+//     // smoothed_distance = lerp(smoothed_distance, distance, 0.f);
+//     // pixellization = smoothed_distance;
+//     // pixellization = lerp(pixellization, distance, 0.8f);
+//     // printf("pixellization = %f\n", pixellization);
+//     // gettimeofday(&timer, NULL);
+//     radial_gradient(sensor_data->window);
+//     // frame_time = get_time_elapsed(&timer);
+//     // if (target_frame_time_ms < frame_time)
+//     //     usleep((target_frame_time_ms - frame_time) * 1000);
+//     t_img *img = init_img(sensor_data->window);
+//     for (int i = 0; i < G_HEIGHT; i++)
+//     {
+//         for (int j = 0; j < G_WIDTH; j++)
+//         {
+//             // if (i % 2 != 0)
+//                 // draw_cell(img, j, i, leds[i][19 - j]);  // c'est pas degueu d'imprimer cmme ca en mode reel
+//             // else
+//                 draw_cell(img, j, i, leds[i][j]);
+//         }
+//         // draw_cell(img, j, i, leds[i][j]);
+//     }
+//     // print_matrix(leds);
+//     // int led_i;
+//     // for (int i = 0; i < G_HEIGHT; i++)
+//     // {
+//     //     for (int j = 0; j < G_WIDTH; j++)
+//     //     {
+//     //         if (i % 2 != 0)
+//     //         {
+//     //             led_data[led_i * 3 + 0] = get_r(leds[i][19 - j]);
+//     //             led_data[led_i * 3 + 1] = get_g(leds[i][19 - j]);
+//     //             led_data[led_i * 3 + 1] = get_b(leds[i][19 - j]);
+//     //         }
+//     //         else
+//     //         {
+//     //             led_data[led_i * 3 + 0] = get_r(leds[i][j]);
+//     //             led_data[led_i * 3 + 1] = get_g(leds[i][j]);
+//     //             led_data[led_i * 3 + 1] = get_b(leds[i][j]);
+//     //         }
+//     //     }
+//     //     draw_cell(img, j, i, leds[i][j]);
+//     // }
+//     push_img(img, sensor_data->window);
+//     frame++;
+//     return (0); 
+// }
+
+void get_sensor_values(sensor_data_t *data, float *curr_distance)
 {
-    // float            target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
+    pthread_mutex_lock(data->avg_lock);
+    float avg = clamp(data->average, 0.0f, 100.0f);
+    if (*curr_distance == -1)
+    {
+        *curr_distance = avg;
+        pthread_mutex_unlock(data->avg_lock);
+        return ;
+    }
+    // if (fabsf(data->average - *curr_distance) < 0.1f)
+    // {
+    //     pthread_mutex_unlock(data->avg_lock);
+    //     return ;
+    // }
+    if (avg == *curr_distance)
+    {
+        pthread_mutex_unlock(data->avg_lock);
+        return ;
+    }
+    data->last_value = *curr_distance;
+    data->next_value = avg;
+    data->interp = 0.0f;
+    *curr_distance = avg;
+    pthread_mutex_unlock(data->avg_lock);
+}
+
+int start_radial(void *data)
+{
+    float               target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
     // static float     distance_tab[10];
-    // float            distance;
-    // long int         frame_time;
-    // t_timeval        timer;
-    // int colors_1[5];
-    // int colors_2[5];
+    float               smoothed_distance = -1.0f;
+    static float        distance = -1.0f;
+    long int            frame_time;
+    t_timeval           timer;
+    int colors_1[5];
+    int colors_2[5];
     
     // __uint8_t led_data[300 * 3];
 
-    // palette_one(colors_1);
-    // palette_two(colors_2);
-    // if (frame == 0)
-    //     get_distance_tab(window->uart_fd, distance_tab, 10, 1);
-    // else
-    //     get_distance_tab(window->uart_fd, distance_tab, 10, 0);
-    // distance = get_avg_ftab(distance_tab, 10);
-    // distance = clamp(distance, 0.0f, 100.0f);
-    // distance = norm_value(distance, 0, 50.0f);
-    // printf("distance = %f\n", distance);
-    // for (int i = 0; i < 5; i++)
-    //     active_palette[i] = interpolate_color(colors_1[i], colors_2[i], distance);
-    // pixellization = lerp(pixellization, distance, 0.2f);
-    // printf("branches = %f\n", pixellization);
-    // gettimeofday(&timer, NULL);
-    radial_gradient(window);
-    // frame_time = get_time_elapsed(&timer);
-    // if (target_frame_time_ms < frame_time)
-    //     usleep((target_frame_time_ms - frame_time) * 1000);
-    t_img *img = init_img(window);
+    sensor_data_t *sensor_data = (sensor_data_t *)data;
+    palette_one(colors_1);
+    palette_two(colors_2);
+
+    if (smoothed_distance < 0.0f)
+        smoothed_distance = distance;
+    
+    // distance = clamp(distance, 0.0f, 50.0f);
+
+    get_sensor_values(sensor_data, &distance);
+    // printf("distance in main = %f\n", distance);
+    
+    // Lissage EMA
+    float alpha = 0.03f;  // rapide mais fluide
+    
+    pthread_mutex_lock(sensor_data->avg_lock);
+    sensor_data->interp += alpha;
+    if (sensor_data->interp > 1.0f)
+        sensor_data->interp = 1.0f;
+    smoothed_distance = lerp(sensor_data->last_value, sensor_data->next_value, sensor_data->interp);
+    pthread_mutex_unlock(sensor_data->avg_lock);
+    // smoothed_distance = lerp(smoothed_distance, distance, alpha);
+    // float maxStep = 1.0f;
+    // float diff = distance - smoothed_distance;
+    // if (fabsf(diff) > maxStep) {
+        // diff = (diff > 0 ? 1 : -1) * maxStep;
+        // }
+        // smoothed_distance += diff * 0.5f; // ou 1.0f si tu veux du step strict
+        
+        // Normalisation pour visuel
+    float normalized = normalize_value(smoothed_distance, 0.0f, 50.0f);
+    float curved = powf(normalized, 1.2f); // légère courbe pour douceur
+    
+    pixellization = curved * 12.0f;
+        
+    printf("di = %f interp = %f last = %f next = %f pix = %f\n", distance, sensor_data->interp, sensor_data->last_value, sensor_data->next_value, pixellization);
+    // printf("pixellization : %f\n", pixellization);
+
+    radial_gradient(sensor_data->window);
+    frame_time = get_time_elapsed(&timer);
+    if (target_frame_time_ms < frame_time)
+        usleep((target_frame_time_ms - frame_time) * 1000);
+
+    t_img *img = init_img(sensor_data->window);
     for (int i = 0; i < G_HEIGHT; i++)
     {
         for (int j = 0; j < G_WIDTH; j++)
@@ -419,7 +571,7 @@ int start_radial(t_mlx *window)
     //     }
     //     draw_cell(img, j, i, leds[i][j]);
     // }
-    push_img(img, window);
+    push_img(img, sensor_data->window);
     frame++;
     return (0); 
 }
@@ -429,22 +581,150 @@ typedef struct s_params
     t_mlx   *window;
 }   t_params;
 
+// void update_average_distance(sensor_data_t *sensor_data)
+// {
+//     static float smoothed = -1.0f;
+//     float new_reading = read_sensor_data(sensor_data->uart_fd);
+
+//     if (new_reading == -1)
+//         new_reading = 0;
+
+//     // Filtrage exponentiel
+//     float alpha = 0.3f;  // Plus petit = plus lissé
+//     if (smoothed == -1.0f)
+//         smoothed = new_reading;
+//     else
+//         smoothed = smoothed * (1 - alpha) + new_reading * alpha;
+
+//     // Clamp
+//     smoothed = clamp(smoothed, 0.0f, 50.0f);
+
+//     // Envoi dans le buffer partagé
+//     pthread_mutex_lock(sensor_data->avg_lock);
+//     *(sensor_data->average) = smoothed;
+//     pthread_mutex_unlock(sensor_data->avg_lock);
+// }
+
+// void update_average_distance(sensor_data_t *sensor_data)
+// {
+//     static float distance_tab[5] = {-1};
+//     float        dist_avg;
+
+//     get_distance_tab(sensor_data->uart_fd, distance_tab, 10);
+//     for (int i = 0; i < 5; i++)
+//         printf("dist %d = %f\n", i, distance_tab[i]);
+//     printf("=========\n");
+//     dist_avg = get_avg_ftab(distance_tab, 5);
+//     dist_avg = clamp(dist_avg, 0.0f, 100.0f);
+//     // dist_avg = norm_value(dist_avg, 0, 50.0f);
+//     printf("dist avg = %f\n", dist_avg);
+//     pthread_mutex_lock(sensor_data->avg_lock);
+//     *(sensor_data->average) = dist_avg;
+//     pthread_mutex_unlock(sensor_data->avg_lock);
+// }
+
+// void update_average_distance(sensor_data_t *sensor_data)
+// {
+//     float new_value = read_sensor_data(sensor_data->uart_fd);
+//     if (new_value == -1)
+//         new_value = 0;
+
+//     pthread_mutex_lock(sensor_data->avg_lock);
+//     *(sensor_data->average) = new_value;
+//     pthread_mutex_unlock(sensor_data->avg_lock);
+// }
+
+// void update_average_distance(sensor_data_t *sensor_data)
+// {
+//     static float tab[5] = {-1};
+//     float new_val = read_sensor_data(sensor_data->uart_fd);
+//     if (new_val == -1) new_val = 0;
+
+//     if (tab[0] == -1)
+//         for (int i = 0; i < 5; i++) tab[i] = new_val;
+//     else {
+//         for (int i = 0; i < 4; i++) tab[i] = tab[i + 1];
+//         tab[4] = new_val;
+//     }
+
+//     float avg = get_avg_ftab(tab, 5);
+//     pthread_mutex_lock(sensor_data->avg_lock);
+//     *(sensor_data->average) = avg;
+//     pthread_mutex_unlock(sensor_data->avg_lock);
+// }
+
+void update_average_distance(sensor_data_t *data)
+{
+    // static float ema_distance = -1;
+    float new_sample = read_sensor_data(data->uart_fd);
+
+    // if (ema_distance < 0)
+    //     ema_distance = new_sample;
+    // else
+    //     ema_distance = lerp(ema_distance, new_sample, 0.4f); // ou moins
+    pthread_mutex_lock(data->avg_lock);
+    data->average = new_sample;
+    pthread_mutex_unlock(data->avg_lock);
+}
+
+void distance_thread_routine(void *data)
+{
+    sensor_data_t *sensor_data = (sensor_data_t *)data;
+
+    while (1)
+    {
+        update_average_distance(sensor_data);
+        usleep(1); // toutes les 50 ms
+    }
+}
+
+
+// void distance_thread_routine(void *data)
+// {
+//     sensor_data_t *sensor_data;
+
+//     sensor_data = (sensor_data_t *)data;
+//     while (1)
+//     {
+//         update_average_distance(sensor_data);
+//         // usleep(10 * 1000);
+//         // usleep(10);
+//     }
+// }
+
 int radial_loop(t_mlx *window)
 {
-    // window->uart_fd = open(SERIAL_PORT, O_RDONLY | O_NOCTTY);
-    // if (window->uart_fd == -1) 
-    // {
-    //     perror("Erreur d'ouverture du port série");
-    //     return 1;
-    // }
-    // // Configurer le port série
-    // if (configure_serial_port(window->uart_fd) < 0) 
-    // {
-    //     close(window->uart_fd);
-    //     return 1;
-    // }
+    pthread_t       sensor_thread;
+    pthread_mutex_t avg_mutex;
+    pthread_mutex_t interp_mutex;
+    sensor_data_t   sensor_data;
+
+    if (pthread_mutex_init(&avg_mutex, NULL) == -1 || pthread_mutex_init(&interp_mutex, NULL) == -1)
+        return (-1);
+    sensor_data.average = 0;
+    sensor_data.last_value = 0;
+    sensor_data.next_value = 0;
+    sensor_data.interp = 0;
+    sensor_data.avg_lock = &avg_mutex;
+    sensor_data.interp_lock = &interp_mutex;
+    sensor_data.window = window;
+    sensor_data.uart_fd = open(SERIAL_PORT, O_RDONLY | O_NOCTTY);
+    if (sensor_data.uart_fd == -1) 
+    {
+        perror("Erreur d'ouverture du port série");
+        return 1;
+    }
+    // Configurer le port série
+    if (configure_serial_port(sensor_data.uart_fd) < 0) 
+    {
+        close(sensor_data.uart_fd);
+        return 1;
+    }
+    void *data = &sensor_data;
+    if (pthread_create(&sensor_thread, NULL, (void *)distance_thread_routine, data) == -1)
+        return (-1);
     mlx_hook(window->win_ptr, 2, 1L << 0, handle_keys, &pixellization);
-    mlx_loop_hook(window->mlx_ptr, &start_radial, window);
+    mlx_loop_hook(window->mlx_ptr, &start_radial, data);
     mlx_loop(window->mlx_ptr);
     return (0);
 }

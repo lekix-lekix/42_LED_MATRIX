@@ -22,11 +22,12 @@
 #include <math.h>
 #include <fcntl.h>
 #include <termio.h>
+#include <pthread.h>
 
 #define UP_KEY      65362
 #define DOWN_KEY    65364
 
-#define SERIAL_PORT "/dev/ttyUSB0"  // Change ceci en fonction de ton port série
+#define SERIAL_PORT "/dev/ttyUSB0"
 #define BUFFER_SIZE 256
 
 
@@ -49,6 +50,18 @@ typedef struct s_img
 	int				line_len;
 	int				endian;
 }					t_img;
+
+typedef struct sensor_data_s
+{
+    pthread_mutex_t     *avg_lock;
+    pthread_mutex_t     *interp_lock;
+    float               last_value;
+    float               next_value;
+    float               interp;
+    float               average; 
+    t_mlx               *window;
+    int                  uart_fd;
+}   sensor_data_t;
 
 typedef struct cell
 {
