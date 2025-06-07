@@ -6,7 +6,7 @@
 #    By: lekix <lekix@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/13 16:29:27 by kipouliq          #+#    #+#              #
-#    Updated: 2025/04/23 01:39:39 by lekix            ###   ########.fr        #
+#    Updated: 2025/06/07 23:16:52 by lekix            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,7 +21,10 @@ SRCS = ./src/mlx_utils.c \
 		./src/radial_gradient.c \
 		./src/linear_gradient.c \
 		./src/conway.c \
-		./src/colors.c
+		./src/colors.c \
+		./src/uart.c \
+		./src/maths.c \
+		./src/sensor.c
 
 PATH_MLX = ./minilibx-linux
 

@@ -6,5 +6,5 @@ int main ()
 
     // conway_loop(&window);
     // linear_loop(&window);
-    radial_loop(&window);
+    start_radial(&window);
 }

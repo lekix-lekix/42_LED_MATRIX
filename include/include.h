@@ -85,14 +85,14 @@ void    draw_cell(t_img *img, int x, int y, int color);
 void    draw_grid(t_img *img, int color);
 void    push_img(t_img *img, t_mlx *window);
 
-int    radial_loop(t_mlx *window);
+int     start_radial(t_mlx *window);
 void    linear_loop(t_mlx *window);
 int     conway_loop(t_mlx *param_window);
 
 int     wheel(__uint8_t pos);
 
 /*********** COLORS ********** */
-int	create_trgb(int t, int r, int g, int b);
+int	    create_trgb(int t, int r, int g, int b);
 void	palette_one(int *colors);
 void	palette_two(int *colors);
 void	palette_three(int *colors);
@@ -101,5 +101,21 @@ int	    interpolate_color(int color_a, int color_b, float t);
 int	    get_color_gradient(float iter, int *colors, int nb_colors);
 
 float	normalize_value(float value, float min, float max);
+
+/************ UART ***************/
+int     configure_serial_port(int fd);
+float   read_sensor_data(int uart_fd);
+
+
+/************* MATHS *************/
+float   square(float nb);
+float   get_norm_distance(t_cell *cell, t_cell *center, float max_distance);
+float   clamp(float value, float min, float max);
+float   lerp(float a, float b, float t);
+float   norm_value(float value, float min, float max);
+
+/************* SENSOR *************/
+void update_average_distance(sensor_data_t *data);
+void get_sensor_values(sensor_data_t *data, float *curr_distance);
 
 #endif
