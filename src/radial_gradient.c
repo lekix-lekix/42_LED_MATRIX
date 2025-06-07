@@ -14,7 +14,7 @@ float get_norm_distance(t_cell *cell, t_cell *center, float max_distance)
 }
 
 float branches = -2.0f;
-float pixellization =  10; // 2.90f; // 1,
+float pixellization = 10; // 2.90f; // 1,
 float spiral_speed = 0.01f;
 float anim_speed = 0.002f;
 int   color_mode = 0;
@@ -107,6 +107,8 @@ void radial_gradient(t_mlx *window)
             cell.y = j;
             float angle = atan2(cell.y - center.y, cell.x - center.x);
             float distance = get_norm_distance(&cell, &center, max_distance);
+            // float pulse = sin(distance * 0.1f + frame * 0.01f);
+            // float r = distance * (form + (pixellization * pulse * sin(branches * angle)));
             float r = distance * (form + (pixellization * sin(branches * angle)));
             float raw_color = (r / max_distance + (float)frame * anim_speed);
             color = fmodf(fabsf(raw_color), 1.0f);
@@ -138,7 +140,7 @@ void radial_gradient(t_mlx *window)
             }
             }
             else
-            leds[j][i] = get_color_gradient(color, colors, 5);
+                leds[j][i] = get_color_gradient(color, colors, 5);
             // draw_cell(img, i, j, get_color_gradient(color, colors, 5));
                         // printf("i = %d j = %d\n", i, j);
         }
@@ -329,14 +331,14 @@ void get_distance_tab(int uart_fd, float *tab, int size)
     printf("=========\n");
 }
 
-float get_avg_ftab(float *tab, int size)
-{
-    float avg = 0;
+// float get_avg_ftab(float *tab, int size)
+// {
+//     float avg = 0;
 
-    for (int i = 0; i < size; i++)
-        avg += tab[i];
-    return (avg / size);
-}
+//     for (int i = 0; i < size; i++)
+//         avg += tab[i];
+//     return (avg / size);
+// }
 
 float lerp(float a, float b, float t)
 {
@@ -508,7 +510,7 @@ int start_radial(void *data)
     // printf("distance in main = %f\n", distance);
     
     // Lissage EMA
-    float alpha = 0.03f;  // rapide mais fluide
+    float alpha = 0.05f;  // rapide mais fluide
     
     pthread_mutex_lock(sensor_data->avg_lock);
     sensor_data->interp += alpha;
@@ -516,6 +518,7 @@ int start_radial(void *data)
         sensor_data->interp = 1.0f;
     smoothed_distance = lerp(sensor_data->last_value, sensor_data->next_value, sensor_data->interp);
     pthread_mutex_unlock(sensor_data->avg_lock);
+    distance = smoothed_distance;
     // smoothed_distance = lerp(smoothed_distance, distance, alpha);
     // float maxStep = 1.0f;
     // float diff = distance - smoothed_distance;
@@ -655,13 +658,7 @@ typedef struct s_params
 
 void update_average_distance(sensor_data_t *data)
 {
-    // static float ema_distance = -1;
     float new_sample = read_sensor_data(data->uart_fd);
-
-    // if (ema_distance < 0)
-    //     ema_distance = new_sample;
-    // else
-    //     ema_distance = lerp(ema_distance, new_sample, 0.4f); // ou moins
     pthread_mutex_lock(data->avg_lock);
     data->average = new_sample;
     pthread_mutex_unlock(data->avg_lock);
