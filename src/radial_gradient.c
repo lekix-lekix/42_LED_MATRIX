@@ -86,6 +86,8 @@ float calculate_radient(t_cell *center, float max_distance, int i, int j)
     // float pulse = sin(distance * 0.1f + frame * 0.01f);
     // float r = distance * (form + (pixellization * pulse * sin(branches * angle)));
 
+    // printf("r = %f\n", r);
+
     float r = distance * (form + (pixellization * sin(branches * angle)));
 
     float raw_color = (r / max_distance + (float)frame * anim_speed);
@@ -263,7 +265,7 @@ int radial_loop(void *data)
     get_sensor_values(sensor_data, &distance);
     
     // Lissage EMA
-    float alpha = 0.05f;  // rapide mais fluide
+    float alpha = 0.02f;  // rapide mais fluide
     
     pthread_mutex_lock(sensor_data->avg_lock);
     sensor_data->interp += alpha;
@@ -273,8 +275,9 @@ int radial_loop(void *data)
     pthread_mutex_unlock(sensor_data->avg_lock);
 
     float curved = powf(normalize_value(distance, 0.0f, 50.0f), 1.2f); // légère courbe pour douceur
-    pixellization = curved * 12.0f;
-        
+    pixellization = lerp(27.0f, 3.0f, curved);
+    // pixellization = curved * 12.0f;
+    // printf("pixellizatio = %f\n", pixellization);
     // printf("di = %f interp = %f last = %f next = %f pix = %f\n", distance, sensor_data->interp, sensor_data->last_value, sensor_data->next_value, pixellization);
 
     radial_gradient();
