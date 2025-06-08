@@ -46,6 +46,6 @@ float read_sensor_data(int uart_fd)
         buffer[bytes_read] = '\0';
         distance = atof(buffer);
     }
-    printf("buffer = %s bytes read = %ld\n", buffer, bytes_read);
+    // printf("buffer = %s bytes read = %ld\n", buffer, bytes_read);
     return (distance);
 }

@@ -14,6 +14,10 @@ int   transition_start_frame = 0;
 int   restart_frame = 0;
 int   animation_restart = 0;
 
+float ring_radius;
+int   ring_active;
+int   ring_start_frame;
+
 int   leds[15][20];
 int   frame = 0;
 int   cell_state[G_HEIGHT][G_WIDTH] = {0};
@@ -39,7 +43,11 @@ int handle_keys(int key)
     else if (key == 100)
         color_mode = (color_mode + 1) % 5;
     else if (key == 110)
-        transition_start_frame = frame;
+    {
+        // transition_start_frame = frame;
+        ring_active = 1;
+        ring_start_frame = frame;
+    }
     else if (key == 107)
         nb_colors = (nb_colors + 1) % 2;
     else if (key == 61)
@@ -61,6 +69,27 @@ void reset_cell_state()
         for (int j = 0; j < G_HEIGHT; j++)
             cell_state[i][j] = 0;
     }
+}
+
+float calculate_radient(t_cell *center, float max_distance, int i, int j)
+{
+    t_cell cell = {i, j};
+
+    cell.x = i;
+    cell.y = j;
+            
+    float angle = atan2(cell.y - center->y, cell.x - center->x);
+    float distance = get_norm_distance(&cell, center, max_distance);
+
+    float form = -8.0f + 2.0f * sin(frame * 0.02f); // pulsation douce
+
+    // float pulse = sin(distance * 0.1f + frame * 0.01f);
+    // float r = distance * (form + (pixellization * pulse * sin(branches * angle)));
+
+    float r = distance * (form + (pixellization * sin(branches * angle)));
+
+    float raw_color = (r / max_distance + (float)frame * anim_speed);
+    return (fmodf(fabsf(raw_color), 1.0f));
 }
 
 void radial_gradient()
@@ -100,25 +129,42 @@ void radial_gradient()
 
     float anim_relaunch_radius = clamp((frame - restart_frame) * 0.005f, 0.0f, 1.0f);
 
+    float ring_radius = 0.0f; // avance de 0 à max_distance
+    float ring_thickness = 0.1f; // plus petit = plus fin
+    static int ring_color_idx = 0;
+    int ring_color = colors[ring_color_idx];
+
+    if (ring_active)
+    {
+        float ring_speed = 0.02f;  // plus petit = plus lent
+        // ring_radius = (frame - ring_start_frame) * ring_speed;
+        float t = clamp((frame - ring_start_frame) * ring_speed / max_distance, 0.0f, 1.0f);
+        ring_radius = max_distance * (t < 0.5f
+        ? 2.0f * t * t          // ease-in
+        : -1.0f + (4.0f - 2.0f * t) * t); // ease-out
+
+
+        printf("ring radius = %f\n", ring_radius);
+        if (ring_radius > 1) {
+            ring_active = 0; // fin de l'effet
+            printf("END\n");
+            ring_color_idx++;
+            if (ring_color_idx == 5)
+                ring_color_idx = 0;
+        }
+        
+    }
+    
     for (int i = 0; i < G_WIDTH; i++)
     {
         for (int j = 0; j < G_HEIGHT; j++)
         {
             cell.x = i;
             cell.y = j;
-            
-            float angle = atan2(cell.y - center.y, cell.x - center.x);
             float distance = get_norm_distance(&cell, &center, max_distance);
-
-            float form = -8.0f + 2.0f * sin(frame * 0.02f); // pulsation douce
-
-            // float pulse = sin(distance * 0.1f + frame * 0.01f);
-            // float r = distance * (form + (pixellization * pulse * sin(branches * angle)));
-
-            float r = distance * (form + (pixellization * sin(branches * angle)));
-
-            float raw_color = (r / max_distance + (float)frame * anim_speed);
-            color = fmodf(fabsf(raw_color), 1.0f);
+            // float delta = fabsf(distance - ring_radius); // distance au cercle animé
+            color = calculate_radient(&center, max_distance, i, j);
+            
 
             if (transition_start_frame)
             {
@@ -146,6 +192,8 @@ void radial_gradient()
                 animation_restart = 0;
             }
             }
+            if (ring_active && fabsf(distance - ring_radius) < ring_thickness)
+                leds[j][i] = ring_color;
             else
                 leds[j][i] = get_color_gradient(color, colors, 5);
             // draw_cell(img, i, j, get_color_gradient(color, colors, 5));
@@ -227,7 +275,7 @@ int radial_loop(void *data)
     float curved = powf(normalize_value(distance, 0.0f, 50.0f), 1.2f); // légère courbe pour douceur
     pixellization = curved * 12.0f;
         
-    printf("di = %f interp = %f last = %f next = %f pix = %f\n", distance, sensor_data->interp, sensor_data->last_value, sensor_data->next_value, pixellization);
+    // printf("di = %f interp = %f last = %f next = %f pix = %f\n", distance, sensor_data->interp, sensor_data->last_value, sensor_data->next_value, pixellization);
 
     radial_gradient();
     frame_time = get_time_elapsed(&timer);
