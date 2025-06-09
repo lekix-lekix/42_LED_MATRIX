@@ -138,7 +138,7 @@ void radial_gradient()
 
     if (ring_active)
     {
-        float ring_speed = 0.02f;  // plus petit = plus lent
+        float ring_speed = 0.05f;  // plus petit = plus lent
         // ring_radius = (frame - ring_start_frame) * ring_speed;
         float t = clamp((frame - ring_start_frame) * ring_speed / max_distance, 0.0f, 1.0f);
         ring_radius = max_distance * (t < 0.5f
@@ -265,7 +265,7 @@ int radial_loop(void *data)
     get_sensor_values(sensor_data, &distance);
     
     // Lissage EMA
-    float alpha = 0.02f;  // rapide mais fluide
+    float alpha = 0.03f;  // rapide mais fluide
     
     pthread_mutex_lock(sensor_data->avg_lock);
     sensor_data->interp += alpha;
@@ -302,7 +302,7 @@ void distance_thread_routine(void *data)
     while (1)
     {
         update_average_distance(sensor_data);
-        usleep(1); // toutes les 50 ms
+        usleep(5); // toutes les 50 ms
     }
 }
 
@@ -315,7 +315,7 @@ int start_radial(t_mlx *window)
 
     if (pthread_mutex_init(&avg_mutex, NULL) == -1 || pthread_mutex_init(&interp_mutex, NULL) == -1)
         return (-1);
-    sensor_data.average = 0;
+    sensor_data.dist_sensor_1 = 0;
     sensor_data.last_value = 0;
     sensor_data.next_value = 0;
     sensor_data.interp = 0;

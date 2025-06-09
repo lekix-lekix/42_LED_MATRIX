@@ -21,7 +21,7 @@ int configure_serial_port(int fd) {
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // mode raw
     options.c_iflag &= ~(IXON | IXOFF | IXANY);         // désactiver le flow control logiciel
     options.c_oflag &= ~OPOST;                          // mode raw output
-    options.c_cc[VMIN]  = 8;                            // attendre 8 octets minimum
+    options.c_cc[VMIN]  = 23;                           // attendre 8 octets minimum
     options.c_cc[VTIME] = 10;         
 
     options.c_cflag |= CREAD | CLOCAL;  // Activer la lecture et ignorer les lignes de contrôle
@@ -34,18 +34,21 @@ int configure_serial_port(int fd) {
     return 0;
 }
 
-float read_sensor_data(int uart_fd)
+void read_sensor_data(int uart_fd, char *sample1, char *sample2)
 {
     size_t  bytes_read;
     char    buffer[BUFFER_SIZE];
-    float   distance; 
 
     bytes_read = read(uart_fd, buffer, sizeof(buffer) - 1);
     if (bytes_read > 0) 
     {
         buffer[bytes_read] = '\0';
-        distance = atof(buffer);
+        // distance = atof(buffer);
     }
-    // printf("buffer = %s bytes read = %ld\n", buffer, bytes_read);
-    return (distance);
+    // int i = 0;
+    printf("buffer = %s\n", buffer);
+    // strncpy(sample1, buffer, 11);
+    // strcpy(sample2, buffer + 11);
+    printf("sample1 = %s\n", sample1);
+    printf("sample2 = %s\n", sample2);
 }

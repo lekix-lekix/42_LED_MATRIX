@@ -23,12 +23,13 @@
 #include <fcntl.h>
 #include <termio.h>
 #include <pthread.h>
+#include <string.h>
 
 #define UP_KEY      65362
 #define DOWN_KEY    65364
 
 #define SERIAL_PORT "/dev/ttyUSB0"
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 23
 
 
 typedef struct timeval t_timeval;
@@ -58,7 +59,8 @@ typedef struct sensor_data_s
     float               last_value;
     float               next_value;
     float               interp;
-    float               average; 
+    float               dist_sensor_1; 
+    float               dist_sensor_2; 
     t_mlx               *window;
     int                  uart_fd;
 }   sensor_data_t;
@@ -104,8 +106,7 @@ float	normalize_value(float value, float min, float max);
 
 /************ UART ***************/
 int     configure_serial_port(int fd);
-float   read_sensor_data(int uart_fd);
-
+void    read_sensor_data(int uart_fd, char *sample1, char *sample2);
 
 /************* MATHS *************/
 float   square(float nb);
