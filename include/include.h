@@ -29,7 +29,7 @@
 #define DOWN_KEY    65364
 
 #define SERIAL_PORT "/dev/ttyUSB0"
-#define BUFFER_SIZE 23
+#define BUFFER_SIZE 13
 
 
 typedef struct timeval t_timeval;
@@ -54,13 +54,16 @@ typedef struct s_img
 
 typedef struct sensor_data_s
 {
-    pthread_mutex_t     *avg_lock;
+    pthread_mutex_t     *dist_lock;
     pthread_mutex_t     *interp_lock;
-    float               last_value;
-    float               next_value;
-    float               interp;
-    float               dist_sensor_1; 
-    float               dist_sensor_2; 
+    float               sens_1_last_value;
+    float               sens_1_next_value;
+    float               sens_1_interp;
+    float               sens_2_last_value;
+    float               sens_2_next_value;
+    float               sens_2_interp;
+    int                 dist_sensor_1; 
+    int                 dist_sensor_2; 
     t_mlx               *window;
     int                  uart_fd;
 }   sensor_data_t;
@@ -106,7 +109,7 @@ float	normalize_value(float value, float min, float max);
 
 /************ UART ***************/
 int     configure_serial_port(int fd);
-void    read_sensor_data(int uart_fd, char *sample1, char *sample2);
+void    read_sensor_data(int uart_fd, int *sample1, int *sample2);
 
 /************* MATHS *************/
 float   square(float nb);
@@ -117,6 +120,7 @@ float   norm_value(float value, float min, float max);
 
 /************* SENSOR *************/
 void update_average_distance(sensor_data_t *data);
-void get_sensor_values(sensor_data_t *data, float *curr_distance);
+void get_sensor_1_values(sensor_data_t *data, float *curr_distance);
+void get_sensor_2_values(sensor_data_t *data, float *curr_distance);
 
 #endif

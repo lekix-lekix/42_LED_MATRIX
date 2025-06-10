@@ -3,52 +3,76 @@
 // Configuration du port série
 int configure_serial_port(int fd) {
     struct termios options;
-
-    // Récupérer les paramètres actuels du port série
-    if (tcgetattr(fd, &options) < 0) 
-    {
-        perror("Erreur lors de la récupération des paramètres du port série");
+    
+    if (tcgetattr(fd, &options) < 0) {
+        perror("tcgetattr");
         return -1;
     }
-    // Configurer les paramètres : 115200 bauds, 8 bits de données, pas de parité, 1 bit d'arrêt
-    cfsetispeed(&options, B115200);  // vitesse de réception
-    cfsetospeed(&options, B115200);  // vitesse d'émission
-
-    options.c_cflag &= ~PARENB;    // Pas de parité
-    options.c_cflag &= ~CSTOPB;    // 1 bit d'arrêt
+    
+    // Vider les buffers AVANT la config
+    tcflush(fd, TCIOFLUSH);
+    
+    // Vitesse
+    cfsetispeed(&options, B115200);
+    cfsetospeed(&options, B115200);
+    
+    // 8N1
+    options.c_cflag &= ~PARENB;  // Pas de parité
+    options.c_cflag &= ~CSTOPB;  // 1 bit d'arrêt
     options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8;        // 8 bits de données
-    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // mode raw
-    options.c_iflag &= ~(IXON | IXOFF | IXANY);         // désactiver le flow control logiciel
-    options.c_oflag &= ~OPOST;                          // mode raw output
-    options.c_cc[VMIN]  = 23;                           // attendre 8 octets minimum
-    options.c_cc[VTIME] = 10;         
-
-    options.c_cflag |= CREAD | CLOCAL;  // Activer la lecture et ignorer les lignes de contrôle
-
-    // Appliquer les paramètres configurés
+    options.c_cflag |= CS8;      // 8 bits
+    
+    // Mode raw complet
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    options.c_iflag &= ~(IXON | IXOFF | IXANY | ICRNL | INLCR);
+    options.c_oflag &= ~OPOST;
+    
+    // Timeout plus court pour detecter les problèmes
+    options.c_cc[VMIN] = 0;   // Pas d'attente minimale
+    options.c_cc[VTIME] = 5;  // 0.5 seconde timeout
+    
+    options.c_cflag |= CREAD | CLOCAL;
+    
     if (tcsetattr(fd, TCSANOW, &options) < 0) {
-        perror("Erreur lors de l'application des paramètres du port série");
+        perror("tcsetattr");
         return -1;
     }
+    
+    // Vider à nouveau après config
+    tcflush(fd, TCIOFLUSH);
     return 0;
 }
 
-void read_sensor_data(int uart_fd, char *sample1, char *sample2)
+void read_sensor_data(int uart_fd, int *sample1, int *sample2)
 {
-    size_t  bytes_read;
-    char    buffer[BUFFER_SIZE];
-
-    bytes_read = read(uart_fd, buffer, sizeof(buffer) - 1);
-    if (bytes_read > 0) 
+    char buffer[32];
+    int bytes_read;
+    
+    // Vider le buffer au début
+    tcflush(uart_fd, TCIFLUSH);
+    while (1) 
     {
-        buffer[bytes_read] = '\0';
-        // distance = atof(buffer);
+        bytes_read = read(uart_fd, buffer, sizeof(buffer) - 1);
+        if (bytes_read > 0) {
+            buffer[bytes_read] = '\0';  // Null terminator
+            break;
+        } else if (bytes_read == 0) {
+            printf("Timeout\n");
+        } else {
+            perror("read");
+            break;
+        }
     }
-    // int i = 0;
-    printf("buffer = %s\n", buffer);
-    // strncpy(sample1, buffer, 11);
-    // strcpy(sample2, buffer + 11);
-    printf("sample1 = %s\n", sample1);
-    printf("sample2 = %s\n", sample2);
+    char sample1_str[6];
+    char sample2_str[6];
+    bzero(sample1_str, 6);
+    bzero(sample2_str, 6);
+    int i = -1;
+    int j = -1;
+    while (buffer[++i] && buffer[i] != ' ')
+        sample1_str[i] = buffer[i];
+    while (buffer[++i])
+        sample2_str[++j] = buffer[i];
+    *sample1 = atoi(sample1_str);
+    *sample2 = atoi(sample2_str);
 }

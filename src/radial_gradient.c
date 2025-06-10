@@ -91,6 +91,7 @@ float calculate_radient(t_cell *center, float max_distance, int i, int j)
     float r = distance * (form + (pixellization * sin(branches * angle)));
 
     float raw_color = (r / max_distance + (float)frame * anim_speed);
+    // printf("raw color = %f\n", fmodf(fabsf(raw_color), 1.0f));
     return (fmodf(fabsf(raw_color), 1.0f));
 }
 
@@ -248,10 +249,44 @@ long int	get_time_elapsed(t_timeval *starting_time)
 //     // for (int i = 0; i < 5; i++)
 //     //     active_palette[i] = interpolate_color(colors_1[i], colors_2[i], distance);
 
+void    set_pixellization(sensor_data_t *sensor_data, float *distance)
+{
+    // Lissage EMA
+    float alpha = 0.02f;  // rapide mais fluide
+    
+    pthread_mutex_lock(sensor_data->dist_lock);
+    sensor_data->sens_1_interp += alpha;
+    if (sensor_data->sens_1_interp > 1.0f)
+        sensor_data->sens_1_interp = 1.0f;
+    *distance = lerp(sensor_data->sens_1_last_value, sensor_data->sens_1_next_value, sensor_data->sens_1_interp);
+    pthread_mutex_unlock(sensor_data->dist_lock);
+
+    float curved = powf(normalize_value(*distance, 0.0f, 50.0f), 1.2f); // légère courbe pour douceur
+    pixellization = lerp(27.0f, 3.0f, curved);
+}
+
+void    set_branches(sensor_data_t *sensor_data, float *distance)
+{
+    // Lissage EMA
+    float alpha = 0.03f;  // rapide mais fluide
+    
+    pthread_mutex_lock(sensor_data->dist_lock);
+    sensor_data->sens_2_interp += alpha;
+    if (sensor_data->sens_2_interp > 1.0f)
+        sensor_data->sens_2_interp = 1.0f;
+    *distance = lerp(sensor_data->sens_2_last_value, sensor_data->sens_2_next_value, sensor_data->sens_2_interp);
+    pthread_mutex_unlock(sensor_data->dist_lock);
+
+    float curved = powf(normalize_value(*distance, 0.0f, 100.0f), 0.8f); // légère courbe pour douceur
+    branches = lerp(0, 5.0f, curved);
+}
+
 int radial_loop(void *data)
 {
     float               target_frame_time_ms = 33.333f; // 1000 / 60 (fps)
-    static float        distance = -1.0f;
+    static float        distance_sens_1 = -1.0f;
+    static float        distance_sens_2 = -1.0f;
+    // static float        distance_sens_2 = -1.0f;
     long int            frame_time;
     int                 colors_1[5];
     int                 colors_2[5];
@@ -262,20 +297,12 @@ int radial_loop(void *data)
     palette_one(colors_1);
     palette_two(colors_2);
 
-    get_sensor_values(sensor_data, &distance);
-    
-    // Lissage EMA
-    float alpha = 0.03f;  // rapide mais fluide
-    
-    pthread_mutex_lock(sensor_data->avg_lock);
-    sensor_data->interp += alpha;
-    if (sensor_data->interp > 1.0f)
-        sensor_data->interp = 1.0f;
-    distance = lerp(sensor_data->last_value, sensor_data->next_value, sensor_data->interp);
-    pthread_mutex_unlock(sensor_data->avg_lock);
-
-    float curved = powf(normalize_value(distance, 0.0f, 50.0f), 1.2f); // légère courbe pour douceur
-    pixellization = lerp(27.0f, 3.0f, curved);
+    get_sensor_1_values(sensor_data, &distance_sens_1);
+    // get_sensor_2_values(sensor_data, &distance_sens_2);
+    printf("sensor 2 = %f\n", distance_sens_2);
+    set_pixellization(sensor_data, &distance_sens_1);
+    // set_branches(sensor_data, &distance_sens_2);
+    printf("pixel : %f, branches : %f\n", pixellization, branches);
     // pixellization = curved * 12.0f;
     // printf("pixellizatio = %f\n", pixellization);
     // printf("di = %f interp = %f last = %f next = %f pix = %f\n", distance, sensor_data->interp, sensor_data->last_value, sensor_data->next_value, pixellization);
@@ -316,10 +343,13 @@ int start_radial(t_mlx *window)
     if (pthread_mutex_init(&avg_mutex, NULL) == -1 || pthread_mutex_init(&interp_mutex, NULL) == -1)
         return (-1);
     sensor_data.dist_sensor_1 = 0;
-    sensor_data.last_value = 0;
-    sensor_data.next_value = 0;
-    sensor_data.interp = 0;
-    sensor_data.avg_lock = &avg_mutex;
+    sensor_data.sens_1_last_value = 0;
+    sensor_data.sens_1_next_value = 0;
+    sensor_data.sens_1_interp = 0;
+    sensor_data.sens_2_last_value = 0;
+    sensor_data.sens_2_next_value = 0;
+    sensor_data.sens_2_interp = 0;
+    sensor_data.dist_lock = &avg_mutex;
     sensor_data.interp_lock = &interp_mutex;
     sensor_data.window = window;
     sensor_data.uart_fd = open(SERIAL_PORT, O_RDONLY | O_NOCTTY);
